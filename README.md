@@ -1,19 +1,20 @@
-<p align="center"><img src="https://www.lin2j.tech/blog-image/easy-deploy/small-logo.svg" alt="Easy Dev" width="200" height="200"></p>
+<p align="center"><img src="./src/main/resources/META-INF/pluginIcon.svg" alt="Easy Dev" width="200" height="200"></p>
 
 <p align="center">Convenient Intellij Platform Plugin for Deploying and Upgrading Services during Development</p>
 
 <div align="center">
-    <a href="https://plugins.jetbrains.com/plugin/19432-easy-deploy"><img src="https://badge.fury.io/gh/lin2j%2Feasy-deploy.svg"></a>
-    <a href="#"><img src = "https://img.shields.io/github/license/lin2j/easy-deploy" ></a>
-    <a href="https://www.lin2j.tech"><img src="https://img.shields.io/badge/author-lin2j-brightgreen"></a>
-    <a href="#"><img src="https://img.shields.io/badge/idea-193.5662%2B-yellow"></a>
+    <a href="https://plugins.jetbrains.com/plugin/31033-easy-dev"><img src="https://badge.fury.io/gh/yueryou%2Feasy-dev.svg"></a>
+    <a href="#"><img src = "https://img.shields.io/github/license/yueryou/easy-dev" ></a>
+    <a href=""><img src="https://img.shields.io/badge/author-yueryou-brightgreen"></a>
+    <a href="#"><img src="https://img.shields.io/badge/idea-223.8836%2B-yellow"></a>
 </div>
+
 
 [**English**](README.md) | [**简体中文**](README_zh_CN.md) 🐼
 
 Easy Dev is a plugin I developed based on the Easy-Deploy plugin with some personalized enhancements. Compared to Easy-Deploy, my plugin has simplified certain functional business constraints and adapted to support a broader range of IDEA versions (IDEA 2022.3+).
 
-Therefore, the plugin provides a simpler approach to terminal-based server management, offering features such as quick commands and task orchestration to help developers customize their workflows and simplify the release process. I named this plugin "Easy Dev" in the hope that it will help developers streamline their development and debugging operations. I will continually optimize it and enhance its features.
+Therefore, the plugin provides a simpler approach to terminal-based server management, offering features such as quick commands and task orchestration to help developers customize their workflows and simplify the release process. I named this plugin "Easy Dev" in the hope that it will help developers streamline their development and deployment workflows. I will continually optimize it and enhance its features.
 
 This is also the first Idea plugin I have developed. I want to express my gratitude to the Easy-Deploy plugin and its author for their open-source contribution.
 

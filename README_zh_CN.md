@@ -1,19 +1,19 @@
-<p align="center"><img src="https://www.lin2j.tech/blog-image/easy-deploy/small-logo.svg" alt="Easy Dev" width="200" height="200"></p>
+<p align="center"><img src="./src/main/resources/META-INF/pluginIcon.svg" alt="Easy Dev" width="200" height="200"></p>
 
 <p align="center">方便开发过程中打包、部署、升级服务的 Intellij 平台插件</p>
 
 <div align="center">
-    <a href="https://plugins.jetbrains.com/plugin/19432-easy-deploy"><img src="https://badge.fury.io/gh/lin2j%2Feasy-deploy.svg"></a>
-    <a href="#"><img src = "https://img.shields.io/github/license/lin2j/easy-deploy" ></a>
-    <a href="https://www.lin2j.tech"><img src="https://img.shields.io/badge/author-lin2j-brightgreen"></a>
-    <a href="#"><img src="https://img.shields.io/badge/idea-193.5662%2B-yellow"></a>
+    <a href="https://plugins.jetbrains.com/plugin/31033-easy-dev"><img src="https://badge.fury.io/gh/yueryou%2Feasy-dev.svg"></a>
+    <a href="#"><img src = "https://img.shields.io/github/license/yueryou/easy-dev" ></a>
+    <a href=""><img src="https://img.shields.io/badge/author-yueryou-brightgreen"></a>
+    <a href="#"><img src="https://img.shields.io/badge/idea-223.8836%2B-yellow"></a>
 </div>
 
 
 
-Easy Dev 是我在Easy-Deploy插件的基础上， 做了一些个性化的功能增强。相比较于Easy-Deploy，我开发的插件功部分功能业务限制简化，适配兼容了更加宽泛的 IDEA 版本（IDEA 2022.3+）。
+Easy Dev 是我在Easy-Deploy插件的基础上， 做了一些个性化的功能增强。相比较于Easy-Deploy，我开发的插件去掉了部分限制，适配兼容了更加宽泛的 IDEA 版本（IDEA 2022.3+），支持更丰富的功能。
 
-因此，插件提供了更简单的方式，面向终端管理服务器，提供了快捷指令、任务编排等功能，帮助开发者的自定已部分工作流，简化发布的过程。我给这个插件起这个名是希望他能够帮助开发者简化开发和调试运维的过程，我会不断地优化它，完善它的功能。
+因此，插件提供了更简单的方式，面向终端管理服务器，提供了快捷指令、任务编排等功能，帮助开发者的自定已部分工作流，简化发布的过程。我给这个插件起这个名是希望他能够帮助简化研发部署工作流，我会不断地优化它，完善它的功能。
 
 这也是我开发的第一款 Idea 插件，希望它能帮助你简化开发和调试运维的过程，帮助你快速开发、测试、部署、升级服务。感谢easy-deploy 插件，感谢作者的开源。
 

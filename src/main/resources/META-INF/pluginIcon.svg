@@ -1,7 +1,37 @@
-<?xml version="1.0" standalone="no"?><!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
-        "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
-<svg class="icon" width="40px" height="40.00px" viewBox="0 0 1024 1024" version="1.1"
-     xmlns="http://www.w3.org/2000/svg">
-    <path d="M769.856 464.96a459.072 459.072 0 0 0-229.44-397.376h-1.024a27.904 27.904 0 0 0-27.136 0 457.856 457.856 0 0 0-168.96 167.936 452.288 452.288 0 0 0-61.568 229.44v8.32a170.688 170.688 0 0 0-60.48 58.432 163.456 163.456 0 0 0-29.184 96 174.592 174.592 0 0 0 34.432 105.344 186.048 186.048 0 0 0 88.64 65.728 20.352 20.352 0 0 0 8.32 1.024 27.648 27.648 0 0 0 28.16-26.048 111.808 111.808 0 0 1 9.408-42.752l3.136-6.4a211.2 211.2 0 0 0 13.568 18.752 353.664 353.664 0 0 0 41.728 46.912 26.24 26.24 0 0 0 20.864 9.408h172.096a26.752 26.752 0 0 0 18.752-7.296 396.352 396.352 0 0 0 43.84-49.024 113.856 113.856 0 0 1 13.568-17.728l2.112 6.4a149.44 149.44 0 0 1 9.408 42.752c0 2.112 1.024 5.184 1.024 7.296a28.224 28.224 0 0 0 34.432 17.728 181.248 181.248 0 0 0 124.096-168.96v-2.112a177.472 177.472 0 0 0-29.184-98.048 183.296 183.296 0 0 0-61.568-58.432v-5.184l1.024-2.112z m-189.824 390.4v57.6a16.704 16.704 0 1 0 33.408 0v-57.6a17.152 17.152 0 0 0-16.704-16.704 16.448 16.448 0 0 0-16.704 16.704z m21.888-401.6a107.712 107.712 0 1 1 1.024-152.256 108.288 108.288 0 0 1-1.024 152.256z m-131.392 458.944v-57.6a16.448 16.448 0 0 0-16.704-16.704 17.152 17.152 0 0 0-16.704 16.704v57.6a16.256 16.256 0 0 0 16.704 15.616 15.04 15.04 0 0 0 16.704-15.616z m55.296-73.024a16.448 16.448 0 0 0-16.704 16.704v130.368a16.256 16.256 0 0 0 16.704 15.616 16.448 16.448 0 0 0 16.704-16.704V855.04a16.192 16.192 0 0 0-16.704-15.616zM597.824 377.6a72 72 0 1 1-72-72A70.784 70.784 0 0 1 597.824 377.6z m0 0"
-          fill="#5dafd5"/>
+<svg viewBox="0 0 400 400" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="primaryGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#0066cc;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#004499;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="arrowGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#00aa88;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#008866;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+
+  <!-- 中心图标组 -->
+  <g transform="translate(200, 200)">
+    <!-- 1. 服务器主体 -->
+    <rect x="-50" y="-40" width="100" height="80" rx="8" stroke="url(#primaryGradient)" stroke-width="3.5" fill="white"/>
+
+    <!-- 2. 服务器分层 -->
+    <line x1="-50" y1="-13" x2="50" y2="-13" stroke="#e9ecef" stroke-width="2"/>
+    <line x1="-50" y1="13" x2="50" y2="13" stroke="#e9ecef" stroke-width="2"/>
+
+    <!-- 3. 左上角红色状态点 -->
+    <circle cx="-38" cy="-28" r="3" fill="#ef4444"/>
+
+    <!-- 4. 终端元素 - 左下角 -->
+    <path d="M -38,20 L -32,26 L -38,32" stroke="url(#arrowGradient)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+    <line x1="-28" y1="33" x2="-24" y2="33" stroke="#555555" stroke-width="2.5" stroke-linecap="round"/>
+
+    <!-- 5. 向上箭头 -->
+    <line x1="0" y1="-20" x2="0" y2="-6" stroke="url(#arrowGradient)" stroke-width="4.5" stroke-linecap="round"/>
+    <path d="M -8,-17 L 0,-28 L 8,-17" stroke="url(#arrowGradient)" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+
+    <!-- 6. 向下箭头 -->
+    <line x1="0" y1="8" x2="0" y2="22" stroke="url(#arrowGradient)" stroke-width="4.5" stroke-linecap="round"/>
+    <path d="M -8,14 L 0,28 L 8,14" stroke="url(#arrowGradient)" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+  </g>
 </svg>
