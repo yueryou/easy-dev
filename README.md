@@ -3,28 +3,21 @@
 <p align="center">Convenient Intellij Platform Plugin for Deploying and Upgrading Services during Development</p>
 
 <div align="center">
-    <a href="#"><img src="https://badge.fury.io/gh/lin2j%2Feasy-deploy.svg"></a>
+    <a href="https://plugins.jetbrains.com/plugin/19432-easy-deploy"><img src="https://badge.fury.io/gh/lin2j%2Feasy-deploy.svg"></a>
     <a href="#"><img src = "https://img.shields.io/github/license/lin2j/easy-deploy" ></a>
     <a href="https://www.lin2j.tech"><img src="https://img.shields.io/badge/author-lin2j-brightgreen"></a>
     <a href="#"><img src="https://img.shields.io/badge/idea-193.5662%2B-yellow"></a>
 </div>
 
-[**简体中文**](README_zh_CN.md) 🐼
+[**English**](README.md) | [**简体中文**](README_zh_CN.md) 🐼
 
-Easy Dev is a plugin I developed, inspired by the Alibaba Cloud Toolkit, to facilitate my service deployment during 
-the development process. Compared to the Alibaba Cloud Toolkit, my plugin has significantly fewer features, as many of 
-the ACT functionalities are unnecessary for me and make it somewhat bloated.
+Easy Dev is a plugin I developed based on the Easy-Deploy plugin with some personalized enhancements. Compared to Easy-Deploy, my plugin has simplified certain functional business constraints and adapted to support a broader range of IDEA versions (IDEA 2022.3+).
 
-Therefore, I focused only on developing the functionalities I care about: server management and the deployment process. 
-I named this plugin "Easy Dev" in the hope that it will help developers simplify the deployment steps in their 
-development process. I will continually optimize it and enhance its features.
+Therefore, the plugin provides a simpler approach to terminal-based server management, offering features such as quick commands and task orchestration to help developers customize their workflows and simplify the release process. I named this plugin "Easy Dev" in the hope that it will help developers streamline their development and debugging operations. I will continually optimize it and enhance its features.
 
-This is also the first Idea plugin I have developed. Many issues were resolved gradually through extensive searching, 
-especially those related to Swing, a technology I haven't used in years. Additionally, the encapsulation by IntelliJ 
-and the varying UI across different versions posed some challenges. Therefore, if you choose to download and use it now,
-please feel free to submit issues to me.
+This is also the first Idea plugin I have developed. I want to express my gratitude to the Easy-Deploy plugin and its author for their open-source contribution.
 
-👉👉 [Find in plugin marketplace](https://plugins.jetbrains.com/plugin/19432-easy-deploy)
+👉👉 [Find in plugin marketplace](https://plugins.jetbrains.com/plugin/31033-easy-dev)
 
 # Support
 
@@ -32,26 +25,33 @@ If this plugin proves helpful to you, please consider showing your support by gi
 
 # Features
 
+- [x] Batch execute remote commands
+- [x] Batch open multiple SSH terminal connections
+- [x] Batch add server information
+- [x] Custom task orchestration
+- [x] Custom quick commands
 - [x] Add/Edit/Remove/Search server information
 - [x] Add/Edit/Remove/Share commands
 - [x] Upload files or directories with filtering support
-- [x] Deploy services
-- [x] Pre/Post-upload command execution support
+- [x] File (directory) upload configuration
+- [x] Pre/Post command execution support
 - [x] Command execution directory override (use upload path)
-- [x] Open terminal
+- [x] Terminal connection
 - [x] SSH password-free login (private key login)
-- [x] SSH jump host
+- [x] SSH proxy jump host
 - [x] Run/Debug Configuration (parallel deployment)
 - [x] I18n support
 - [x] SFTP transfer panel
 - [x] Plugin settings
 - [x] Export & Import & Clean plugin configuration
- 
+
 # Contact me 🐾
 
 I'm relatively new to developing Idea plugins, so there might be some shortcomings in addressing certain issues.
 
-If you have any suggestions or encounter bugs, feel free to raise issues or contact me via email. I'll respond as 
-promptly as possible.
+If you have any suggestions or encounter bugs, feel free to raise issues or contact me via email. I'll respond as promptly as possible.
 
-📮📮 630198766@qq.com
+📮📮 yueryou01@gmail.com
+
+👻👻[Submit an Issue on Github](https://github.com/yueryou/easy-dev/issues)
+👻👻Thanks：[Easy-Deploy](https://github.com/lin2j/easy-deploy)
