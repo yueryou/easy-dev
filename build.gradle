@@ -44,6 +44,11 @@ tasks.withType(JavaCompile).configureEach {
     options.compilerArgs << "-Xlint:unchecked"
 }
 
+// 运行 IDE 时设置应用程序名称（用于系统托盘显示）
+tasks.runIde {
+    jvmArgs "-Djava.awt.application.name=Easy Dev"
+}
+
 test {
     useJUnitPlatform()
 }

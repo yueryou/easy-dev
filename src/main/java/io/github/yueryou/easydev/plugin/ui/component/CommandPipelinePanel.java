@@ -224,17 +224,16 @@ public class CommandPipelinePanel extends JPanel {
                         } else {
                             message.append(pipeline.getName());
                         }
-
-                        notificationService.showNotification(project, title, message.toString());
+                        notificationService.showNotificationWithSound(project, title, message.toString());
                     });
 
                 } catch (NumberFormatException e) {
                     logConsumer.accept("服务器 ID 格式错误：" + e.getMessage());
-                    notificationService.showNotification(project, MessagesBundle.getText("pipeline.notification.title.running"),
+                    notificationService.showSystemTrayErrorNotification(project, MessagesBundle.getText("pipeline.notification.title.running"),
                         MessagesBundle.getText("pipeline.notification.server.id.error") + e.getMessage());
                 } catch (Exception e) {
                     logConsumer.accept("执行异常：" + e.getMessage());
-                    notificationService.showNotification(project, MessagesBundle.getText("pipeline.notification.title.running"),
+                    notificationService.showSystemTrayErrorNotification(project, MessagesBundle.getText("pipeline.notification.title.running"),
                         MessagesBundle.getText("pipeline.notification.execution.error") + e.getMessage());
                 }
             }
