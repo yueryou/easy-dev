@@ -108,7 +108,10 @@ public class Pipeline implements UniqueModel {
         this.steps = new ArrayList<>();
         if (pipelineSteps != null) {
             for (PipelineStep step : pipelineSteps) {
-                steps.add(new PipelineStepWrapper(step));
+                // 跳过 null 元素，避免反序列化问题
+                if (step != null) {
+                    steps.add(new PipelineStepWrapper(step));
+                }
             }
         }
         // 标记缓存失效

@@ -35,6 +35,15 @@ public class PipelineStepWrapper {
     }
 
     public PipelineStepWrapper(PipelineStep step) {
+        // 防御性处理 null 输入，避免反序列化时 NPE
+        if (step == null) {
+            this.type = null;
+            this.uid = null;
+            this.name = null;
+            this.enabled = true;
+            return;
+        }
+
         this.type = step.getType();
         this.uid = step.getUid();
         this.name = step.getName();
