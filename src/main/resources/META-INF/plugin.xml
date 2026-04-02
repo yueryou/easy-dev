@@ -76,6 +76,12 @@
     ]]></description>
 
     <change-notes><![CDATA[
+    <h2>release 1.5.2</h2>
+    <ul>
+        <li>Add system notification pipeline complete.</li>
+        <li>fix pipeline init error.</li>
+    </ul>
+
     <h2>release 1.5.1</h2>
     <ul>
         <li>fix pipeline step persistence.</li>
