@@ -6,7 +6,6 @@ import com.intellij.ui.components.JBTabbedPane;
 import org.jetbrains.annotations.Nullable;
 import io.github.yueryou.easydev.plugin.ui.component.CommandManagePanel;
 import io.github.yueryou.easydev.plugin.ui.component.CommandPipelinePanel;
-import io.github.yueryou.easydev.plugin.ui.component.CommandSettingPanel;
 import tech.lin2j.idea.plugin.event.ApplicationContext;
 import tech.lin2j.idea.plugin.uitl.MessagesBundle;
 
@@ -19,7 +18,6 @@ public class CommandManageDialog extends DialogWrapper {
 
     private final CommandManagePanel commandManagePanel;
     private final CommandPipelinePanel commandPipelinePanel;
-    private final CommandSettingPanel commandSettingsPanel;
     private JBTabbedPane tabs;
 
     public CommandManageDialog(@Nullable Project project) {
@@ -29,8 +27,6 @@ public class CommandManageDialog extends DialogWrapper {
         commandManagePanel = new CommandManagePanel(project);
         // 指令、任务编排
         commandPipelinePanel = new CommandPipelinePanel(project);
-        // 指令设置
-        commandSettingsPanel = new CommandSettingPanel(project);
 
         setTitle(MessagesBundle.getText("dialog.panel.command.title"));
         setSize(500, 0);
@@ -63,12 +59,10 @@ public class CommandManageDialog extends DialogWrapper {
     protected JComponent createCenterPanel() {
         String mangeTab = MessagesBundle.getText("dialog.command.tab.manage");
         String pipelineTab = MessagesBundle.getText("dialog.command.tab.task");
-        String settingTab = MessagesBundle.getText("dialog.command.tab.setting");
 
         tabs = new JBTabbedPane();
         tabs.addTab(mangeTab, commandManagePanel.createUI());
         tabs.addTab(pipelineTab, commandPipelinePanel.createUI());
-        tabs.addTab(settingTab, commandSettingsPanel.createUI());
 
         root.add(tabs);
         ApplicationContext.getApplicationContext().addApplicationListener(commandManagePanel);
