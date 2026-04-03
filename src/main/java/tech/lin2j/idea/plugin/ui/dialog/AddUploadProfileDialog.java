@@ -289,12 +289,12 @@ public class AddUploadProfileDialog extends DialogWrapper {
             fileBrowser.setText(split[0]);
             useRegex = split.length == 2 && Objects.equals(split[1], STR_TRUE);
         }
-        if (FileUtil.isDirectory(up.getFile())) {
-            excludeInput.setEnabled(true);
-            excludeInput.setText(up.getExclude());
-        }
+        // 直接设置 exclude 值，不依赖 isDirectory 检查
+        excludeInput.setText(up.getExclude());
         locationInput.setText(up.getLocation());
         useUploadPathCheckBox.setSelected(up.getUseUploadPath() != null && up.getUseUploadPath());
+        // 回显 includeCurrentDir 字段
+        includeCurrentDir = up.getIncludeCurrentDir() != null && up.getIncludeCurrentDir();
 
         // Handle backward compatibility: if commandId exists but pre/postCommandId don't, migrate to postCommandId
         Integer preCommandId = up.getPreCommandId();
@@ -379,17 +379,42 @@ public class AddUploadProfileDialog extends DialogWrapper {
     }
 
     private void addNewCommand(Command cmd, boolean isPreCommand) {
-        ComboBox<Command> targetBox = isPreCommand ? preCommandBox : postCommandBox;
-        CollectionComboBoxModel<Command> model = (CollectionComboBoxModel<Command>) targetBox.getModel();
+        // 刷新两个下拉框的命令列表
+        refreshCommandBox(preCommandBox, cmd, isPreCommand ? true : false);
+        refreshCommandBox(postCommandBox, cmd, isPreCommand ? false : true);
+    }
+
+    /**
+     * 刷新命令下拉框，添加新命令并更新选中状态
+     * @param box 要刷新的下拉框
+     * @param newCmd 新添加的命令
+     * @param selectNew 是否选中新命令
+     */
+    private void refreshCommandBox(ComboBox<Command> box, Command newCmd, boolean selectNew) {
+        Command currentSelected = (Command) box.getSelectedItem();
+        CollectionComboBoxModel<Command> model = (CollectionComboBoxModel<Command>) box.getModel();
         List<Command> items = model.getItems();
-        int i = 0;
-        for (Command item : items) {
-            if (item instanceof SeparatorCommand) {
-                model.add(i, cmd);
-                break;
-            }
-            i++;
+
+        // 清空并重新加载命令列表
+        model.removeAll();
+        model.add(NoneCommand.INSTANCE);
+
+        // 添加所有现有命令（从 ConfigHelper 获取最新列表）
+        List<Command> allCommands = ConfigHelper.getAllCommands();
+        for (Command cmd : allCommands) {
+            model.add(cmd);
         }
+
+        // 设置选中项
+        if (selectNew) {
+            box.setSelectedItem(newCmd);
+        } else if (currentSelected != null) {
+            // 恢复之前的选中项
+            box.setSelectedItem(currentSelected);
+        }
+
+        // 更新预览
+        updateCommandPreview();
     }
 
     private FileChooserDescriptor allButNoMultipleChoose() {
@@ -418,7 +443,7 @@ public class AddUploadProfileDialog extends DialogWrapper {
     }
     private class CurrentIncludeToggleAction extends ToggleAction {
         public CurrentIncludeToggleAction() {
-            super("Include Current", "Include current dir", AllIcons.Nodes.Include);
+            super("Include Current", "Include current dir", AllIcons.Nodes.Folder);
         }
 
         @Override

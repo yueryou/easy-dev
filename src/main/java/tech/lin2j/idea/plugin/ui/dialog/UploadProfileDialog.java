@@ -23,6 +23,7 @@ import tech.lin2j.idea.plugin.model.Command;
 import tech.lin2j.idea.plugin.model.ConfigHelper;
 import tech.lin2j.idea.plugin.model.NoneCommand;
 import tech.lin2j.idea.plugin.model.UploadProfile;
+import tech.lin2j.idea.plugin.model.event.CommandAddEvent;
 import tech.lin2j.idea.plugin.model.event.UploadProfileAddEvent;
 import tech.lin2j.idea.plugin.model.event.UploadProfileSelectedEvent;
 import tech.lin2j.idea.plugin.ssh.SshServer;
@@ -64,6 +65,9 @@ public class UploadProfileDialog extends DialogWrapper implements ApplicationLis
     private final int sshId;
     private SshServer server;
 
+    // Additional listener for CommandAddEvent
+    private final ApplicationListener<CommandAddEvent> commandAddListener = event -> reloadProfileBox();
+
     public UploadProfileDialog(@NotNull Project project, int sshId) {
         super(project);
         this.project = project;
@@ -75,6 +79,9 @@ public class UploadProfileDialog extends DialogWrapper implements ApplicationLis
         initProfileContainer();
         initCommandLabelContainers();
         reloadProfileBox();
+
+        // Register command add listener
+        ApplicationContext.getApplicationContext().addApplicationListener(commandAddListener);
 
         root = FormBuilder.createFormBuilder()
                 .addLabeledComponent(MessagesBundle.getText("dialog.upload.profile"), profileContainer, 20)
@@ -90,6 +97,13 @@ public class UploadProfileDialog extends DialogWrapper implements ApplicationLis
         setOKButtonText("Upload");
         setTitle(MessagesBundle.getText("dialog.upload.frame"));
         init();
+    }
+
+    @Override
+    public void dispose() {
+        // Unregister command add listener
+        ApplicationContext.getApplicationContext().removeApplicationListener(commandAddListener);
+        super.dispose();
     }
 
     @Nullable
@@ -228,7 +242,18 @@ public class UploadProfileDialog extends DialogWrapper implements ApplicationLis
         hostLabel.setText(server.getIp() + ":" + server.getPort());
         String[] split = profile.getFile().split(LOCAL_FILE_INFO_SEPARATOR);
         boolean useRegex = split.length == 2 && Objects.equals(split[1], STR_TRUE);
-        fileLabel.setIcon(useRegex ? AllIcons.Actions.Regex : null);
+        boolean includeCurrent = profile.getIncludeCurrentDir() != null && profile.getIncludeCurrentDir();
+
+        // 设置文件标签图标：显示 Include Current 和/或 Regex 状态
+        if (includeCurrent && useRegex) {
+            fileLabel.setIcon(AllIcons.Nodes.Folder);
+        } else if (useRegex) {
+            fileLabel.setIcon(AllIcons.Actions.Regex);
+        } else if (includeCurrent) {
+            fileLabel.setIcon(AllIcons.Nodes.Folder);
+        } else {
+            fileLabel.setIcon(null);
+        }
         fileLabel.setText(split[0]);
         excludeLabel.setText(profile.getExclude());
         locationLabel.setText(profile.getLocation());
@@ -295,7 +320,9 @@ public class UploadProfileDialog extends DialogWrapper implements ApplicationLis
             }
         } else {
             hostLabel.setText(server.getIp() + ":" + server.getPort());
+            fileLabel.setIcon(null);
             fileLabel.setText("");
+            excludeLabel.setText("");
             locationLabel.setText("");
             preCommandLabel.clear();
             postCommandLabel.clear();

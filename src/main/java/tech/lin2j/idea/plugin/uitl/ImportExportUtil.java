@@ -123,8 +123,15 @@ public class ImportExportUtil {
                 hostInfo.getUploadProfiles().forEach(newProfile -> {
                     newProfile.setId(ConfigHelper.maxUploadProfileId() + 1);
                     newProfile.setSshId(null); // Clear sshId for new global format
+                    // Map all command IDs (commandId, preCommandId, postCommandId)
                     if (newProfile.getCommandId() != null) {
                         newProfile.setCommandId(commandIdMap.get(newProfile.getCommandId()));
+                    }
+                    if (newProfile.getPreCommandId() != null) {
+                        newProfile.setPreCommandId(commandIdMap.get(newProfile.getPreCommandId()));
+                    }
+                    if (newProfile.getPostCommandId() != null) {
+                        newProfile.setPostCommandId(commandIdMap.get(newProfile.getPostCommandId()));
                     }
                     ConfigHelper.addUploadProfile(newProfile);
                 });
