@@ -28,6 +28,11 @@ public class CommandManageDialog extends DialogWrapper {
         // 指令、任务编排
         commandPipelinePanel = new CommandPipelinePanel(project);
 
+        // 设置双击执行命令后的回调，用于关闭弹窗
+        commandManagePanel.setOnDoubleClickExecute(() -> {
+            super.doOKAction();
+        });
+
         setTitle(MessagesBundle.getText("dialog.panel.command.title"));
         setSize(500, 0);
         // 设置 OK 按钮文本为"运行"（中文）或"Run"（英文）

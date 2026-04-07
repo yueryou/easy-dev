@@ -35,6 +35,8 @@ import tech.lin2j.idea.plugin.uitl.UiUtil;
 import javax.swing.*;
 import javax.swing.event.DocumentEvent;
 import java.awt.*;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
@@ -74,6 +76,11 @@ public class CommandManagePanel extends JPanel implements ApplicationListener<Co
 
     private final transient Project project;
     private final PluginNotificationService notificationService;
+
+    /**
+     * 双击执行命令后的回调（用于关闭弹窗）
+     */
+    private Runnable onDoubleClickExecute;
 
     public CommandManagePanel(Project project) {
         this.project = project;
@@ -167,6 +174,21 @@ public class CommandManagePanel extends JPanel implements ApplicationListener<Co
                 commandDetails.setText("");
             }
         });
+        // 添加双击监听器：双击时执行命令并关闭弹窗
+        commandList.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseClicked(MouseEvent e) {
+                if (e.getClickCount() == 2) {
+                    if (onDoubleClickExecute != null) {
+                        onDoubleClickExecute.run();
+                    }
+                    Command command = commandList.getSelectedValue();
+                    if (command != null) {
+                        executeCommand();
+                    }
+                }
+            }
+        });
     }
 
     private JPanel createCommandToolbarPanel() {
@@ -223,6 +245,14 @@ public class CommandManagePanel extends JPanel implements ApplicationListener<Co
     }
 
     /**
+     * 设置双击执行命令后的回调
+     * @param callback 回调函数（用于关闭弹窗）
+     */
+    public void setOnDoubleClickExecute(Runnable callback) {
+        this.onDoubleClickExecute = callback;
+    }
+
+    /**
      * 向目标session发送指令
      */
     public void executeCommand() {
@@ -240,25 +270,82 @@ public class CommandManagePanel extends JPanel implements ApplicationListener<Co
                     notificationService.showNotification(project, title, "no command selected");
                     return;
                 }
+
                 List<String> selectedItems = searchableCheckboxList.getSelectedItems();
-                // 获取要执行的命令
-                // 根据session name 过滤终端
-                instance.getWidgets().stream()
-                        .filter(it -> selectedItems.contains(it.getTerminalTitle().getDefaultTitle()))
-                        .forEach(terminalWidget -> {
-                            String sessionName = terminalWidget.getTerminalTitle().getDefaultTitle();
-                            TtyConnector ttyConnector = terminalWidget.getTtyConnector();
-                            if (ttyConnector != null) {
-                                try {
-                                    String command = selectedValue.generateCmdLine();
-                                    ttyConnector.write(command + "\r");
-                                } catch (IOException e) {
-                                    String msg = sessionName + " send failed: " + e.getMessage();
-                                    notificationService.showNotification(project, title, msg);
-                                }
-                            }
-                        });
+                List<JBTerminalWidget> targetWidgets;
+
+                // 如果未选中任何 session，自动获取当前激活的终端窗口
+                if (selectedItems.isEmpty()) {
+                    JBTerminalWidget activeWidget = findActiveTerminalWidget(instance);
+                    if (activeWidget == null) {
+                        notificationService.showNotification(project, title, "no active terminal found");
+                        return;
+                    }
+                    targetWidgets = List.of(activeWidget);
+                } else {
+                    // 根据session name 过滤终端
+                    targetWidgets = instance.getWidgets().stream()
+                            .filter(it -> selectedItems.contains(it.getTerminalTitle().getDefaultTitle()))
+                            .collect(Collectors.toList());
+                }
+
+                // 向目标终端发送命令
+                for (JBTerminalWidget terminalWidget : targetWidgets) {
+                    String sessionName = terminalWidget.getTerminalTitle().getDefaultTitle();
+                    TtyConnector ttyConnector = terminalWidget.getTtyConnector();
+                    if (ttyConnector != null) {
+                        try {
+                            String command = selectedValue.generateCmdLine();
+                            ttyConnector.write(command + "\r");
+                        } catch (IOException e) {
+                            String msg = sessionName + " send failed: " + e.getMessage();
+                            notificationService.showNotification(project, title, msg);
+                        }
+                    }
+                }
             }
         });
+    }
+
+    /**
+     * 查找当前激活的终端窗口（焦点所在的终端）
+     */
+    private JBTerminalWidget findActiveTerminalWidget(TerminalView terminalView) {
+        // 尝试通过焦点查找
+        Component focusOwner = KeyboardFocusManager.getCurrentKeyboardFocusManager().getFocusOwner();
+        JBTerminalWidget focusedWidget = findParentTerminalWidget(focusOwner);
+        if (focusedWidget != null) {
+            return focusedWidget;
+        }
+
+        // 如果焦点查找失败，尝试通过 hasFocus 查找
+        for (JBTerminalWidget widget : terminalView.getWidgets()) {
+            if (widget.hasFocus()) {
+                return widget;
+            }
+        }
+
+        // 如果仍没找到，返回最后一个终端（通常是最近使用的）
+        java.util.Set<JBTerminalWidget> widgets = terminalView.getWidgets();
+        if (!widgets.isEmpty()) {
+            // 转换为列表并返回最后一个
+            List<JBTerminalWidget> widgetList = widgets.stream().collect(Collectors.toList());
+            return widgetList.get(widgetList.size() - 1);
+        }
+
+        return null;
+    }
+
+    /**
+     * 从组件向上遍历查找父级 JBTerminalWidget
+     */
+    private JBTerminalWidget findParentTerminalWidget(Component component) {
+        while (component != null) {
+            if (component instanceof JBTerminalWidget) {
+                return (JBTerminalWidget) component;
+            }
+            component = component.getParent();
+        }
+        return null;
     }
 }
