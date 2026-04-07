@@ -76,6 +76,13 @@
     ]]></description>
 
     <change-notes><![CDATA[
+    <h2>release 1.5.3</h2>
+    <ul>
+        <li>Supports double-click to run quick command</li>
+        <li>Fix upload file config some bugs.</li>
+        <li>Added local debug logging for improved iteration.</li>
+    </ul>
+
     <h2>release 1.5.2</h2>
     <ul>
         <li>Add system notification pipeline complete.</li>
