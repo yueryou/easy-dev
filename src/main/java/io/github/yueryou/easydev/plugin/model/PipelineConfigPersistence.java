@@ -1,7 +1,7 @@
 package io.github.yueryou.easydev.plugin.model;
 
 import com.intellij.openapi.application.ApplicationManager;
-import io.github.yueryou.easydev.plugin.mcp.log.UnifiedLogger;
+import io.github.yueryou.easydev.plugin.log.UnifiedLogger;
 import tech.lin2j.idea.plugin.model.ConfigPersistence;
 
 import java.util.List;

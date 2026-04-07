@@ -52,7 +52,7 @@ public class ConfigPersistence implements PersistentStateComponent<ConfigPersist
             pipelines = new CopyOnWriteArrayList<>();
         }
         // 过滤 null 元素（可能由于 XML 反序列化失败导致）
-        pipelines.removeIf(p -> p == null);
+        pipelines.removeIf(Objects::isNull);
         checkUid(pipelines);
         return pipelines;
     }
