@@ -8,7 +8,7 @@ plugins {
 }
 
 group 'io.github.yueryou'
-version '1.5.2-223'
+version '1.5.3-223'
 
 repositories {
     mavenCentral()
@@ -23,7 +23,6 @@ dependencies {
     implementation 'org.jetbrains:annotations:24.0.1'
 //    implementation 'org.jetbrains.kotlin:kotlin-stdlib:1.9.25'
 //    implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8"
-    implementation "org.jetbrains.kotlin:kotlin-stdlib:2.2.20"
     implementation "org.jetbrains.kotlin:kotlin-reflect:2.2.20"
     implementation 'com.hierynomus:sshj:0.39.0'
     testImplementation 'org.junit.jupiter:junit-jupiter:5.8.2'
