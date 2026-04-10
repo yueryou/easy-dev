@@ -10,6 +10,7 @@ import com.intellij.openapi.project.Project;
 import com.intellij.openapi.util.text.Strings;
 import com.intellij.terminal.JBTerminalWidget;
 import com.intellij.ui.DocumentAdapter;
+import com.intellij.ui.DoubleClickListener;
 import com.intellij.ui.ToolbarDecorator;
 import com.intellij.ui.components.JBList;
 import com.intellij.ui.components.JBTextField;
@@ -35,7 +36,6 @@ import tech.lin2j.idea.plugin.uitl.UiUtil;
 import javax.swing.*;
 import javax.swing.event.DocumentEvent;
 import java.awt.*;
-import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.io.IOException;
 import java.util.HashMap;
@@ -174,21 +174,19 @@ public class CommandManagePanel extends JPanel implements ApplicationListener<Co
                 commandDetails.setText("");
             }
         });
-        // 添加双击监听器：双击时执行命令并关闭弹窗
-        commandList.addMouseListener(new MouseAdapter() {
+        new DoubleClickListener() {
             @Override
-            public void mouseClicked(MouseEvent e) {
-                if (e.getClickCount() == 2) {
+            protected boolean onDoubleClick(MouseEvent e) {
+                Command command = commandList.getSelectedValue();
+                if (command != null) {
                     if (onDoubleClickExecute != null) {
                         onDoubleClickExecute.run();
                     }
-                    Command command = commandList.getSelectedValue();
-                    if (command != null) {
-                        executeCommand();
-                    }
+                    executeCommand();
                 }
+                return true;
             }
-        });
+        }.installOn(commandList);
     }
 
     private JPanel createCommandToolbarPanel() {

@@ -32,6 +32,9 @@ public class CommandManageDialog extends DialogWrapper {
         commandManagePanel.setOnDoubleClickExecute(() -> {
             super.doOKAction();
         });
+        commandPipelinePanel.setOnDoubleClickExecute(() -> {
+            super.doOKAction();
+        });
 
         setTitle(MessagesBundle.getText("dialog.panel.command.title"));
         setSize(500, 0);

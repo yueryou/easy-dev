@@ -8,6 +8,7 @@ import com.intellij.openapi.progress.Task;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.wm.ToolWindowManager;
 import com.intellij.ui.DocumentAdapter;
+import com.intellij.ui.DoubleClickListener;
 import com.intellij.ui.ToolbarDecorator;
 import com.intellij.ui.components.JBList;
 import com.intellij.ui.components.JBTextField;
@@ -29,6 +30,7 @@ import tech.lin2j.idea.plugin.uitl.UiUtil;
 import javax.swing.*;
 import javax.swing.event.DocumentEvent;
 import java.awt.*;
+import java.awt.event.MouseEvent;
 import java.util.List;
 import java.util.function.Consumer;
 
@@ -56,6 +58,11 @@ public class CommandPipelinePanel extends JPanel {
 
     private final PluginNotificationService notificationService;
 
+    /**
+     * 双击执行流水线后的回调（用于关闭弹窗）
+     */
+    private Runnable onDoubleClickExecute;
+
     public CommandPipelinePanel(Project project) {
         this.project = project;
         this.notificationService = ApplicationManager.getApplication().getService(PluginNotificationService.class);
@@ -79,6 +86,19 @@ public class CommandPipelinePanel extends JPanel {
     private void initPipelineList() {
         pipelineList = new JBList<>();
         pipelineList.setCellRenderer(new PipelineListCellRenderer());
+        new DoubleClickListener() {
+            @Override
+            protected boolean onDoubleClick(MouseEvent e) {
+                Pipeline pipeline = pipelineList.getSelectedValue();
+                if (pipeline != null) {
+                    if (onDoubleClickExecute != null) {
+                        onDoubleClickExecute.run();
+                    }
+                    executeSelectedPipeline();
+                }
+                return true;
+            }
+        }.installOn(pipelineList);
     }
 
     private JPanel createPipelineToolbarPanel() {
@@ -138,6 +158,14 @@ public class CommandPipelinePanel extends JPanel {
 
     public JPanel createUI() {
         return root;
+    }
+
+    /**
+     * 设置双击执行流水线后的回调
+     * @param callback 回调函数（用于关闭弹窗）
+     */
+    public void setOnDoubleClickExecute(Runnable callback) {
+        this.onDoubleClickExecute = callback;
     }
 
     /**
