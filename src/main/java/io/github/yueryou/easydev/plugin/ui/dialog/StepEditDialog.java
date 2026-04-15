@@ -4,11 +4,7 @@ import com.intellij.openapi.project.Project;
 import com.intellij.openapi.ui.DialogWrapper;
 import com.intellij.ui.components.JBTextField;
 import com.intellij.util.ui.FormBuilder;
-import io.github.yueryou.easydev.plugin.model.LocalCommandStep;
-import io.github.yueryou.easydev.plugin.model.PipelineStep;
-import io.github.yueryou.easydev.plugin.model.RemoteCommandStep;
-import io.github.yueryou.easydev.plugin.model.StepType;
-import io.github.yueryou.easydev.plugin.model.UploadStep;
+import io.github.yueryou.easydev.plugin.model.*;
 import org.jetbrains.annotations.Nullable;
 import tech.lin2j.idea.plugin.model.Command;
 import tech.lin2j.idea.plugin.model.ConfigHelper;
@@ -49,6 +45,15 @@ public class StepEditDialog extends DialogWrapper {
     private JTextField remoteWorkingDirField;
     private JComboBox<String> remoteCommandComboBox;
     private JComboBox<String> remoteServerComboBox;
+
+    // Delay check fields
+    private JTextField delayDurationField;
+    private JTextField delayIntervalField;
+    private DefaultListModel<DelayCheckItem> checkItemsModel;
+    private JList<DelayCheckItem> checkItemsList;
+    private JButton addItemButton;
+    private JButton editItemButton;
+    private JButton removeItemButton;
 
     private JPanel cardsPanel;
     private CardLayout cardLayout;
@@ -111,6 +116,22 @@ public class StepEditDialog extends DialogWrapper {
         uploadServerComboBox = new JComboBox<>(serverItems.toArray(new String[0]));
         remoteServerComboBox = new JComboBox<>(serverItems.toArray(new String[0]));
 
+        // 延迟检查组件
+        delayDurationField = new JTextField("60", 10);
+        delayIntervalField = new JTextField("5", 10);
+        checkItemsModel = new DefaultListModel<>();
+        checkItemsList = new JList<>(checkItemsModel);
+        checkItemsList.setCellRenderer(new CheckItemListCellRenderer());
+        JScrollPane checkItemsScrollPane = new JScrollPane(checkItemsList);
+        checkItemsScrollPane.setPreferredSize(new Dimension(500, 120));
+        addItemButton = new JButton("添加");
+        editItemButton = new JButton("编辑");
+        removeItemButton = new JButton("删除");
+
+        addItemButton.addActionListener(e -> addCheckItem());
+        editItemButton.addActionListener(e -> editCheckItem());
+        removeItemButton.addActionListener(e -> removeCheckItem());
+
         // 卡片面板
         cardLayout = new CardLayout();
         cardsPanel = new JPanel(cardLayout);
@@ -118,6 +139,7 @@ public class StepEditDialog extends DialogWrapper {
         cardsPanel.add(createLocalCommandPanel(), "LOCAL_COMMAND");
         cardsPanel.add(createUploadPanel(), "UPLOAD");
         cardsPanel.add(createRemoteCommandPanel(), "REMOTE_COMMAND");
+        cardsPanel.add(createDelayCheckPanel(), "DELAY_CHECK");
 
         // 如果是编辑模式，填充数据
         if (existingStep != null) {
@@ -161,6 +183,20 @@ public class StepEditDialog extends DialogWrapper {
                 .getPanel();
     }
 
+    private JPanel createDelayCheckPanel() {
+        JPanel buttonsPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 4, 0));
+        buttonsPanel.add(addItemButton);
+        buttonsPanel.add(editItemButton);
+        buttonsPanel.add(removeItemButton);
+
+        return FormBuilder.createFormBuilder()
+                .addLabeledComponent("总时长 (秒)", delayDurationField)
+                .addLabeledComponent("检测间隔 (秒)", delayIntervalField)
+                .addLabeledComponent("检测项列表", buttonsPanel)
+                .addComponent(checkItemsList)
+                .getPanel();
+    }
+
     private void onTypeChanged() {
         StepType selectedType = (StepType) typeComboBox.getSelectedItem();
         if (selectedType != null) {
@@ -194,6 +230,15 @@ public class StepEditDialog extends DialogWrapper {
                     selectItemInComboBox(remoteCommandComboBox, remoteStep.getCommandId());
                 }
                 break;
+            case DELAY_CHECK:
+                DelayCheckStep checkStep = (DelayCheckStep) step;
+                delayDurationField.setText(String.valueOf(checkStep.getDuration()));
+                delayIntervalField.setText(String.valueOf(checkStep.getInterval()));
+                checkItemsModel.clear();
+                for (DelayCheckItem item : checkStep.getCheckItems()) {
+                    checkItemsModel.addElement(item);
+                }
+                break;
         }
     }
 
@@ -206,6 +251,65 @@ public class StepEditDialog extends DialogWrapper {
             }
         }
     }
+
+    // ==================== Check Item Management ====================
+
+    private void addCheckItem() {
+        CheckItemEditDialog dialog = new CheckItemEditDialog(project, null);
+        if (dialog.showAndGet()) {
+            DelayCheckItem newItem = dialog.getItem();
+            if (newItem != null) {
+                checkItemsModel.addElement(newItem);
+            }
+        }
+    }
+
+    private void editCheckItem() {
+        int selectedIndex = checkItemsList.getSelectedIndex();
+        if (selectedIndex < 0) {
+            JOptionPane.showMessageDialog(
+                    getContentPane(),
+                    "请先选择要编辑的检测项",
+                    "提示",
+                    JOptionPane.INFORMATION_MESSAGE
+            );
+            return;
+        }
+
+        DelayCheckItem existingItem = checkItemsModel.get(selectedIndex);
+        CheckItemEditDialog dialog = new CheckItemEditDialog(project, existingItem);
+        if (dialog.showAndGet()) {
+            DelayCheckItem updatedItem = dialog.getItem();
+            if (updatedItem != null) {
+                checkItemsModel.set(selectedIndex, updatedItem);
+            }
+        }
+    }
+
+    private void removeCheckItem() {
+        int selectedIndex = checkItemsList.getSelectedIndex();
+        if (selectedIndex < 0) {
+            JOptionPane.showMessageDialog(
+                    getContentPane(),
+                    "请先选择要删除的检测项",
+                    "提示",
+                    JOptionPane.INFORMATION_MESSAGE
+            );
+            return;
+        }
+
+        int confirm = JOptionPane.showConfirmDialog(
+                getContentPane(),
+                "确定删除选中的检测项吗？",
+                "确认删除",
+                JOptionPane.YES_NO_OPTION
+        );
+        if (confirm == JOptionPane.YES_OPTION) {
+            checkItemsModel.remove(selectedIndex);
+        }
+    }
+
+    // ==================== Do OK ====================
 
     @Override
     protected void doOKAction() {
@@ -312,12 +416,101 @@ public class StepEditDialog extends DialogWrapper {
 
                 return remoteStep;
 
+            case DELAY_CHECK:
+                DelayCheckStep checkStep = new DelayCheckStep();
+                checkStep.setEnabled(true);
+
+                try {
+                    int duration = Integer.parseInt(delayDurationField.getText().trim());
+                    if (duration <= 0) {
+                        showError("总时长必须大于 0");
+                        return null;
+                    }
+                    checkStep.setDuration(duration);
+                } catch (NumberFormatException e) {
+                    showError("总时长必须是有效数字");
+                    return null;
+                }
+
+                try {
+                    int interval = Integer.parseInt(delayIntervalField.getText().trim());
+                    if (interval <= 0) {
+                        showError("检测间隔必须大于 0");
+                        return null;
+                    }
+                    checkStep.setInterval(interval);
+                } catch (NumberFormatException e) {
+                    showError("检测间隔必须是有效数字");
+                    return null;
+                }
+
+                List<DelayCheckItem> items = new ArrayList<>();
+                for (int i = 0; i < checkItemsModel.size(); i++) {
+                    items.add(checkItemsModel.get(i));
+                }
+                if (items.isEmpty()) {
+                    showError("请至少添加一个检测项");
+                    return null;
+                }
+                checkStep.setCheckItems(items);
+
+                return checkStep;
+
             default:
                 throw new IllegalArgumentException("Unknown step type: " + type);
         }
     }
 
+    private void showError(String message) {
+        javax.swing.JOptionPane.showMessageDialog(
+                getContentPane(),
+                message,
+                "验证失败",
+                javax.swing.JOptionPane.WARNING_MESSAGE
+        );
+    }
+
     public PipelineStep getStep() {
         return stepResult;
+    }
+
+    // ==================== Check Item List Renderer ====================
+
+    private static class CheckItemListCellRenderer extends JLabel implements ListCellRenderer<DelayCheckItem> {
+        public CheckItemListCellRenderer() {
+            setOpaque(true);
+            setBorder(BorderFactory.createEmptyBorder(2, 4, 2, 4));
+        }
+
+        @Override
+        public Component getListCellRendererComponent(
+                JList<? extends DelayCheckItem> list,
+                DelayCheckItem item,
+                int index,
+                boolean isSelected,
+                boolean cellHasFocus) {
+
+            if (item == null) {
+                setText("");
+                return this;
+            }
+
+            StringBuilder text = new StringBuilder();
+            text.append(index + 1).append(". ");
+            text.append(item.getType().getDisplayName()).append(": ");
+            text.append(item.getBriefDescription());
+
+            setText(text.toString());
+
+            if (isSelected) {
+                setBackground(list.getSelectionBackground());
+                setForeground(list.getSelectionForeground());
+            } else {
+                setBackground(list.getBackground());
+                setForeground(list.getForeground());
+            }
+
+            return this;
+        }
     }
 }

@@ -1,10 +1,6 @@
 package io.github.yueryou.easydev.plugin.ui.render;
 
-import io.github.yueryou.easydev.plugin.model.LocalCommandStep;
-import io.github.yueryou.easydev.plugin.model.PipelineStep;
-import io.github.yueryou.easydev.plugin.model.RemoteCommandStep;
-import io.github.yueryou.easydev.plugin.model.StepType;
-import io.github.yueryou.easydev.plugin.model.UploadStep;
+import io.github.yueryou.easydev.plugin.model.*;
 
 import javax.swing.*;
 import java.awt.*;
@@ -64,6 +60,14 @@ public class PipelineStepListCellRenderer extends JLabel implements ListCellRend
                     text.append(": ").append(cmd);
                 }
                 break;
+            case DELAY_CHECK:
+                text.append("延迟检查");
+                if (step instanceof DelayCheckStep) {
+                    DelayCheckStep checkStep = (DelayCheckStep) step;
+                    text.append(": ").append(checkStep.getDuration()).append("s/").append(checkStep.getInterval()).append("s, ")
+                            .append(checkStep.getCheckItems().size()).append(" 项");
+                }
+                break;
         }
         text.append(")");
 
@@ -89,6 +93,8 @@ public class PipelineStepListCellRenderer extends JLabel implements ListCellRend
                 return com.intellij.icons.AllIcons.Actions.Upload;
             case REMOTE_COMMAND:
                 return com.intellij.icons.AllIcons.Actions.Execute;
+            case DELAY_CHECK:
+                return com.intellij.icons.AllIcons.General.Filter;
             default:
                 return com.intellij.icons.AllIcons.General.Information;
         }

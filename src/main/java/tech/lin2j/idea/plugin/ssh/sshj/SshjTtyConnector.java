@@ -119,7 +119,8 @@ public class SshjTtyConnector implements CustomTtyConnector {
                         pendingTermSize.width, pendingTermSize.height,
                         pendingPixelSize.width, pendingPixelSize.height);
             } catch (TransportException e) {
-                throw new RuntimeException(e);
+                // Transport broken (e.g. server reboot), ignore silently
+                log.debug("Resize failed due to broken transport: {}", e.getMessage());
             }
 
             pendingTermSize = null;
@@ -177,25 +178,36 @@ public class SshjTtyConnector implements CustomTtyConnector {
 
     @Override
     public int read(char[] buffer, int offset, int len) throws IOException {
-        return inputStreamReader.read(buffer, offset, len);
+        try {
+            return inputStreamReader.read(buffer, offset, len);
+        } catch (IOException e) {
+            // Connection lost (e.g. server reboot), return EOF to allow graceful terminal close
+            log.debug("Read failed due to broken transport: {}", e.getMessage());
+            return -1;
+        }
     }
 
     @Override
     public void write(byte[] bytes) throws IOException {
         if (outputStream != null) {
-            outputStream.write(bytes);
-            outputStream.flush();
-            // Log command if session logger is enabled
-            if (sessionLogger != null && sshLogEnabled) {
-                String command = new String(bytes, StandardCharsets.UTF_8);
-                sessionLogger.print(command);
+            try {
+                outputStream.write(bytes);
+                outputStream.flush();
+                // Log command if session logger is enabled
+                if (sessionLogger != null && sshLogEnabled) {
+                    String command = new String(bytes, StandardCharsets.UTF_8);
+                    sessionLogger.print(command);
+                }
+            } catch (IOException e) {
+                // Connection lost (e.g. server reboot), ignore to prevent terminal crash
+                log.debug("Write failed due to broken transport: {}", e.getMessage());
             }
         }
     }
 
     @Override
     public boolean isConnected() {
-        return shell != null && shell.isOpen();
+        return shell != null && shell.isOpen() && sshClient != null && sshClient.isConnected();
     }
 
     @Override

@@ -175,6 +175,8 @@ public class PipelineExecutor {
                     context.getLogConsumer().accept("[错误] RemoteCommand 步骤未配置 Server: " + step.getName());
                     return StepResult.failure("RemoteCommand 步骤未配置 Server");
                 }
+            case DELAY_CHECK:
+                return DelayCheckExecutor.execute(step, context);
             default:
                 return StepResult.failure("不支持的步骤类型：" + step.getType());
         }
