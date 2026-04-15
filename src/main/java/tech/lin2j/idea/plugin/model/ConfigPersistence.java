@@ -3,6 +3,7 @@ package tech.lin2j.idea.plugin.model;
 import com.intellij.openapi.components.PersistentStateComponent;
 import com.intellij.openapi.components.State;
 import com.intellij.openapi.components.Storage;
+import com.intellij.openapi.diagnostic.Logger;
 import com.intellij.util.xmlb.XmlSerializerUtil;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -25,6 +26,8 @@ import java.util.concurrent.CopyOnWriteArrayList;
 )
 public class ConfigPersistence implements PersistentStateComponent<ConfigPersistence>, Serializable {
 
+    private static final Logger LOG = Logger.getInstance(ConfigPersistence.class);
+
     private List<SshServer> sshServers;
 
     private List<Command> commands;
@@ -44,7 +47,35 @@ public class ConfigPersistence implements PersistentStateComponent<ConfigPersist
 
     @Override
     public void loadState(@NotNull ConfigPersistence state) {
+        LOG.info("[ConfigPersistence] loadState() called");
+        if (state != null && state.getPipelines() != null) {
+            LOG.info("[ConfigPersistence] State has " + state.getPipelines().size() + " pipelines BEFORE copyBean");
+            for (int i = 0; i < state.getPipelines().size(); i++) {
+                io.github.yueryou.easydev.plugin.model.Pipeline p = state.getPipelines().get(i);
+                LOG.info("[ConfigPersistence]   pipeline[" + i + "]: name=" + p.getName() +
+                    ", uid=" + p.getUid() +
+                    ", steps=" + (p.getSteps() != null ? p.getSteps().size() : "null"));
+                if (p.getSteps() != null) {
+                    for (int j = 0; j < p.getSteps().size(); j++) {
+                        io.github.yueryou.easydev.plugin.model.PipelineStepWrapper w = p.getSteps().get(j);
+                        LOG.info("[ConfigPersistence]     step[" + j + "]: type=" + (w != null ? w.getType() : "null") +
+                            ", uid=" + (w != null ? w.getUid() : "null"));
+                    }
+                }
+            }
+        } else {
+            LOG.info("[ConfigPersistence] State or pipelines is null");
+        }
         XmlSerializerUtil.copyBean(state, this);
+        if (this.getPipelines() != null) {
+            LOG.info("[ConfigPersistence] This has " + this.getPipelines().size() + " pipelines AFTER copyBean");
+            for (int i = 0; i < this.getPipelines().size(); i++) {
+                io.github.yueryou.easydev.plugin.model.Pipeline p = this.getPipelines().get(i);
+                LOG.info("[ConfigPersistence]   this.pipeline[" + i + "]: name=" + p.getName() +
+                    ", uid=" + p.getUid() +
+                    ", steps=" + (p.getSteps() != null ? p.getSteps().size() : "null"));
+            }
+        }
     }
 
     public List<io.github.yueryou.easydev.plugin.model.Pipeline> getPipelines() {

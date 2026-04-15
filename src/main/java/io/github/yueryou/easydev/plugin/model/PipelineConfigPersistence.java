@@ -32,6 +32,19 @@ public class PipelineConfigPersistence {
             ConfigPersistence persistence = ApplicationManager.getApplication().getService(ConfigPersistence.class);
             List<Pipeline> pipelines = persistence.getPipelines();
 
+            // 调试日志：打印每个 pipeline 的 steps 信息
+            UnifiedLogger.getInstance().debug("PipelineConfig", String.format(
+                "Loaded %d pipelines", pipelines != null ? pipelines.size() : 0));
+            if (pipelines != null) {
+                for (int i = 0; i < pipelines.size(); i++) {
+                    Pipeline p = pipelines.get(i);
+                    UnifiedLogger.getInstance().debug("PipelineConfig", String.format(
+                        "  pipeline[%d]: name=%s, uid=%s, steps=%s",
+                        i, p.getName(), p.getUid(),
+                        p.getSteps() != null ? p.getSteps().size() : "null"));
+                }
+            }
+
             long duration = System.currentTimeMillis() - startTime;
             UnifiedLogger.getInstance().logFlowEnd("LoadPipelines", true, duration);
             return pipelines;
@@ -101,6 +114,23 @@ public class PipelineConfigPersistence {
             // 生成 ID (使用时间戳确保唯一性)
             if (pipeline.getId() == null) {
                 pipeline.setId(String.valueOf(System.currentTimeMillis()));
+            }
+
+            // 调试日志：保存前打印 pipeline 信息
+            UnifiedLogger.getInstance().debug("PipelineConfig", String.format(
+                "AddPipeline BEFORE save: name=%s, uid=%s, id=%s",
+                pipeline.getName(), pipeline.getUid(), pipeline.getId()));
+            if (pipeline.getSteps() != null) {
+                UnifiedLogger.getInstance().debug("PipelineConfig", String.format(
+                    "  steps count: %d", pipeline.getSteps().size()));
+                for (int i = 0; i < pipeline.getSteps().size(); i++) {
+                    PipelineStepWrapper w = pipeline.getSteps().get(i);
+                    UnifiedLogger.getInstance().debug("PipelineConfig", String.format(
+                        "  step[%d]: type=%s, uid=%s, name=%s",
+                        i, w.getType(), w.getUid(), w.getName()));
+                }
+            } else {
+                UnifiedLogger.getInstance().debug("PipelineConfig", "  steps is NULL");
             }
 
             persistence.getPipelines().add(pipeline);

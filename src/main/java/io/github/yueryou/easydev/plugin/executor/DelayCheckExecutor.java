@@ -27,6 +27,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
 
 /**
  * 延迟检查步骤执行器
@@ -164,7 +165,7 @@ public class DelayCheckExecutor {
             long duration = System.currentTimeMillis() - start;
 
             String output = status.getMessage();
-            context.getLogConsumer().accept("    [输出] " + (output != null ? output.replace("\n", "\\n") : ""));
+            logMultiLineOutput(context.getLogConsumer(), "    [输出] ", output);
             context.getLogConsumer().accept("    [状态] " + (status.isSuccess() ? "成功" : "失败") + ", 耗时: " + duration + "ms");
 
             if (status.isSuccess()) {
@@ -219,7 +220,7 @@ public class DelayCheckExecutor {
             String output = readStream(process.getInputStream());
             int exitCode = process.exitValue();
 
-            context.getLogConsumer().accept("    [输出] " + (output != null ? output.replace("\n", "\\n") : ""));
+            logMultiLineOutput(context.getLogConsumer(), "    [输出] ", output);
             context.getLogConsumer().accept("    [退出码] " + exitCode + ", 耗时: " + duration + "ms");
 
             if (exitCode != 0) {
@@ -278,7 +279,7 @@ public class DelayCheckExecutor {
             long duration = System.currentTimeMillis() - start;
 
             String output = status.getMessage();
-            context.getLogConsumer().accept("    [输出] " + (output != null ? output.replace("\n", "\\n") : ""));
+            logMultiLineOutput(context.getLogConsumer(), "    [输出] ", output);
             context.getLogConsumer().accept("    [状态] " + (status.isSuccess() ? "成功" : "失败") + ", 耗时: " + duration + "ms");
 
             if (status.isSuccess()) {
@@ -350,7 +351,7 @@ public class DelayCheckExecutor {
             String body = response.body();
 
             context.getLogConsumer().accept("    [状态码] " + statusCode + " (期望: " + expectedCode + ")");
-            context.getLogConsumer().accept("    [响应体] " + (body != null && !body.isEmpty() ? body.replace("\n", "\\n") : ""));
+            logMultiLineOutput(context.getLogConsumer(), "    [响应体] ", body);
             context.getLogConsumer().accept("    [耗时] " + duration + "ms");
 
             if (statusCode == expectedCode) {
@@ -472,5 +473,23 @@ public class DelayCheckExecutor {
     private static String escapeShellArg(String arg) {
         if (arg == null) return "''";
         return "'" + arg.replace("'", "'\\''") + "'";
+    }
+
+    /**
+     * 格式化多行输出，每行添加指定前缀缩进
+     */
+    private static void logMultiLineOutput(Consumer<String> logConsumer, String prefix, String output) {
+        if (output == null || output.isEmpty()) {
+            logConsumer.accept(prefix + "(空)");
+            return;
+        }
+        String[] lines = output.split("\n");
+        for (int i = 0; i < lines.length; i++) {
+            if (i == 0) {
+                logConsumer.accept(prefix + lines[i]);
+            } else {
+                logConsumer.accept("    | " + lines[i]);
+            }
+        }
     }
 }

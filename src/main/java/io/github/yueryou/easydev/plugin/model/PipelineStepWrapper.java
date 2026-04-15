@@ -1,5 +1,8 @@
 package io.github.yueryou.easydev.plugin.model;
 
+import com.intellij.openapi.diagnostic.Logger;
+import com.intellij.util.xmlb.annotations.Tag;
+import io.github.yueryou.easydev.plugin.log.UnifiedLogger;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
@@ -12,7 +15,10 @@ import java.util.List;
  * 需要将不同类型的步骤（LocalCommandStep, UploadStep, RemoteCommandStep, DelayCheckStep）
  * 转换为扁平结构存储，反序列化时再根据 type 字段重建原始类型。
  */
+@Tag("pipeline-step-wrapper")
 public class PipelineStepWrapper {
+
+    private static final Logger LOG = Logger.getInstance(PipelineStepWrapper.class);
 
     private StepType type;
     private String uid;
@@ -54,6 +60,7 @@ public class PipelineStepWrapper {
             this.uid = null;
             this.name = null;
             this.enabled = true;
+            LOG.info("[PipelineStepWrapper] Constructor received NULL step");
             return;
         }
 
@@ -61,6 +68,8 @@ public class PipelineStepWrapper {
         this.uid = step.getUid();
         this.name = step.getName();
         this.enabled = step.isEnabled();
+
+        LOG.info("[PipelineStepWrapper] Wrapping step: type=" + type + ", uid=" + uid + ", name=" + name + ", enabled=" + enabled);
 
         if (step instanceof LocalCommandStep) {
             LocalCommandStep localStep = (LocalCommandStep) step;
@@ -91,7 +100,12 @@ public class PipelineStepWrapper {
      * 将包装对象转换为具体 PipelineStep 实例。
      */
     public PipelineStep toStep() {
-        if (type == null) return null;
+        LOG.info("[PipelineStepWrapper] toStep() called: type=" + type + ", uid=" + uid + ", name=" + name);
+
+        if (type == null) {
+            LOG.info("[PipelineStepWrapper] toStep() returning NULL - type is null");
+            return null;
+        }
 
         PipelineStep step;
         switch (type) {
@@ -102,6 +116,7 @@ public class PipelineStepWrapper {
                 localStep.setTimeout(timeout);
                 localStep.setCommandId(commandId);
                 step = localStep;
+                LOG.info("[PipelineStepWrapper] toStep() created LocalCommandStep: " + localStep.getName());
                 break;
             case UPLOAD:
                 UploadStep uploadStep = new UploadStep();
@@ -109,6 +124,7 @@ public class PipelineStepWrapper {
                 uploadStep.setServerId(serverId);
                 uploadStep.setCreateRemoteDir(createRemoteDir);
                 step = uploadStep;
+                LOG.info("[DEBUG] toStep() created UploadStep: " + uploadStep.getUploadProfileId());
                 break;
             case REMOTE_COMMAND:
                 RemoteCommandStep remoteStep = new RemoteCommandStep();
@@ -117,6 +133,7 @@ public class PipelineStepWrapper {
                 remoteStep.setCommandId(remoteCommandId);
                 remoteStep.setServerId(remoteServerId);
                 step = remoteStep;
+                LOG.info("[DEBUG] toStep() created RemoteCommandStep: " + remoteStep.getCommand());
                 break;
             case DELAY_CHECK:
                 DelayCheckStep checkStep = new DelayCheckStep();
@@ -124,14 +141,17 @@ public class PipelineStepWrapper {
                 checkStep.setInterval(delayCheckInterval);
                 checkStep.setCheckItems(deserializeCheckItems(delayCheckItemsJson));
                 step = checkStep;
+                LOG.info("[PipelineStepWrapper] toStep() created DelayCheckStep: " + checkStep.getName() + ", duration=" + checkStep.getDuration());
                 break;
             default:
+                LOG.info("[PipelineStepWrapper] toStep() returning NULL - unknown type");
                 return null;
         }
 
         step.setUid(uid);
         step.setName(name);
         step.setEnabled(enabled);
+        LOG.info("[PipelineStepWrapper] toStep() returning step: " + step.getClass().getSimpleName() + ", name=" + step.getName() + ", type=" + step.getType());
         return step;
     }
 

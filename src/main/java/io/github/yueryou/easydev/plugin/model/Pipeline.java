@@ -1,5 +1,8 @@
 package io.github.yueryou.easydev.plugin.model;
 
+import com.intellij.openapi.diagnostic.Logger;
+import com.intellij.util.xmlb.annotations.Tag;
+import io.github.yueryou.easydev.plugin.log.UnifiedLogger;
 import tech.lin2j.idea.plugin.model.UniqueModel;
 
 import java.util.ArrayList;
@@ -15,11 +18,14 @@ import java.util.stream.Collectors;
  */
 public class Pipeline implements UniqueModel {
 
+    private static final Logger LOG = Logger.getInstance(Pipeline.class);
+
     private String id;
     private String uid;
     private String name;
 
     // 存储步骤的包装列表，用于 XmlSerializer 序列化
+    @Tag("step")
     private List<PipelineStepWrapper> steps;
     private FailureStrategy onFailure;
     private long createdAt;
@@ -27,15 +33,12 @@ public class Pipeline implements UniqueModel {
 
     // 缓存已转换的步骤列表，避免重复创建对象
     private transient List<PipelineStep> cachedPipelineSteps;
-    // 标记缓存是否有效
-    private transient boolean pipelineStepsCacheValid;
 
     public Pipeline() {
         this.steps = new ArrayList<>();
         this.onFailure = FailureStrategy.STOP;
         this.createdAt = System.currentTimeMillis();
         this.updatedAt = this.createdAt;
-        this.pipelineStepsCacheValid = false;
     }
 
     @Override
@@ -75,29 +78,56 @@ public class Pipeline implements UniqueModel {
      * 设置步骤列表（供 XmlSerializer 序列化/反序列化使用）。
      */
     public void setSteps(List<PipelineStepWrapper> steps) {
+        UnifiedLogger.getInstance().debug("Pipeline", String.format(
+            "setSteps() called: name=%s, steps=%s",
+            name, steps != null ? steps.size() : "null"));
+        if (steps != null) {
+            for (int i = 0; i < steps.size(); i++) {
+                PipelineStepWrapper w = steps.get(i);
+                UnifiedLogger.getInstance().debug("Pipeline", String.format(
+                    "  step[%d]: type=%s, uid=%s, name=%s",
+                    i, w != null ? w.getType() : "null", w != null ? w.getUid() : "null", w != null ? w.getName() : "null"));
+            }
+        }
         this.steps = steps;
-        // 标记缓存失效
-        this.pipelineStepsCacheValid = false;
     }
 
     /**
      * 获取转换后的 PipelineStep 列表（供业务逻辑使用）。
-     * 使用缓存避免每次调用都创建新对象。
      */
     public List<PipelineStep> getPipelineSteps() {
-        if (!pipelineStepsCacheValid) {
-            if (steps == null) {
-                cachedPipelineSteps = new ArrayList<>();
-            } else {
-                cachedPipelineSteps = steps.stream()
-                        .filter(wrapper -> wrapper != null)
-                        .map(PipelineStepWrapper::toStep)
-                        .filter(step -> step != null)
-                        .collect(Collectors.toList());
-            }
-            pipelineStepsCacheValid = true;
+        LOG.info("[Pipeline] getPipelineSteps() called: name=" + name + ", uid=" + uid +
+            ", steps.field=" + (steps != null ? steps.size() : "NULL"));
+
+        if (steps == null) {
+            LOG.info("[Pipeline] steps field is NULL!");
+            return new ArrayList<>();
+        } else if (steps.isEmpty()) {
+            LOG.info("[Pipeline] steps field is EMPTY!");
+            return new ArrayList<>();
         }
-        return cachedPipelineSteps != null ? cachedPipelineSteps : new ArrayList<>();
+
+        LOG.info("[Pipeline] Converting " + steps.size() + " wrappers to steps");
+        for (int i = 0; i < steps.size(); i++) {
+            PipelineStepWrapper w = steps.get(i);
+            LOG.info("[Pipeline]   wrapper[" + i + "]: type=" +
+                (w != null ? w.getType() : "NULL") +
+                ", uid=" + (w != null ? w.getUid() : "NULL"));
+        }
+
+        List<PipelineStep> result = steps.stream()
+                .filter(wrapper -> wrapper != null)
+                .map(wrapper -> {
+                    PipelineStep step = wrapper.toStep();
+                    LOG.info("[Pipeline]   toStep() returned: " +
+                        (step != null ? step.getClass().getSimpleName() + ", name=" + step.getName() : "NULL"));
+                    return step;
+                })
+                .filter(step -> step != null)
+                .collect(Collectors.toList());
+
+        LOG.info("[Pipeline] Converted to " + result.size() + " valid steps");
+        return result;
     }
 
     /**
@@ -114,8 +144,6 @@ public class Pipeline implements UniqueModel {
                 }
             }
         }
-        // 标记缓存失效
-        this.pipelineStepsCacheValid = false;
     }
 
     public FailureStrategy getOnFailure() {
