@@ -44,6 +44,11 @@ public class CommandUtil {
         ApplicationManager.getApplication().executeOnPooledThread(() -> {
             CommandLog commandLog = project.getUserData(CommandLog.COMMAND_LOG_KEY);
             assert commandLog != null;
+            // Clear console and print start message
+            commandLog.getConsole().clear();
+            commandLog.info("========================================");
+            commandLog.info("开始上传: " + profile.getName() + " -> " + server.getIp() + ":" + server.getPort());
+            commandLog.info("========================================");
             executeUpload(profile, server, commandLog);
         });
     }
@@ -213,7 +218,7 @@ public class CommandUtil {
     }
 
     private static void printFinished(CommandLog commandLog) {
-        commandLog.info("Finished at: " + LocalDateTime.now());
+        commandLog.info("上传结束 at: " + LocalDateTime.now());
     }
 
 
