@@ -155,12 +155,19 @@ public class DelayCheckExecutor {
             }
 
             ISshService sshService = new SshjSshService();
+
+            context.getLogConsumer().accept("    [命令] " + command);
+            context.getLogConsumer().accept("    [服务器] " + server.getIp() + ":" + server.getPort());
+
             long start = System.currentTimeMillis();
             SshStatus status = sshService.execute(server, command);
             long duration = System.currentTimeMillis() - start;
 
+            String output = status.getMessage();
+            context.getLogConsumer().accept("    [输出] " + (output != null ? output.replace("\n", "\\n") : ""));
+            context.getLogConsumer().accept("    [状态] " + (status.isSuccess() ? "成功" : "失败") + ", 耗时: " + duration + "ms");
+
             if (status.isSuccess()) {
-                String output = status.getMessage();
                 if (outputContainsExpected(output, item.getExpectedOutput())) {
                     return StepResult.success(output, 0);
                 } else {
@@ -196,17 +203,24 @@ public class DelayCheckExecutor {
             pb.redirectErrorStream(true);
             Process process = pb.start();
 
+            context.getLogConsumer().accept("    [脚本] " + scriptPath);
+            context.getLogConsumer().accept("    [命令] " + String.join(" ", pb.command()));
+
             long start = System.currentTimeMillis();
             boolean finished = process.waitFor(item.getTimeout(), TimeUnit.SECONDS);
             long duration = System.currentTimeMillis() - start;
 
             if (!finished) {
                 process.destroyForcibly();
+                context.getLogConsumer().accept("    [状态] 超时 (" + item.getTimeout() + "s)");
                 return StepResult.failure("本地脚本执行超时 (" + item.getTimeout() + "s)");
             }
 
             String output = readStream(process.getInputStream());
             int exitCode = process.exitValue();
+
+            context.getLogConsumer().accept("    [输出] " + (output != null ? output.replace("\n", "\\n") : ""));
+            context.getLogConsumer().accept("    [退出码] " + exitCode + ", 耗时: " + duration + "ms");
 
             if (exitCode != 0) {
                 StepResult result = StepResult.failure("本地脚本执行失败，退出码: " + exitCode);
@@ -255,12 +269,19 @@ public class DelayCheckExecutor {
             // 通过 SSH 执行远程脚本
             String command = "bash " + escapeShellArg(scriptPath);
 
+            context.getLogConsumer().accept("    [脚本] " + scriptPath);
+            context.getLogConsumer().accept("    [服务器] " + server.getIp() + ":" + server.getPort());
+            context.getLogConsumer().accept("    [命令] " + command);
+
             long start = System.currentTimeMillis();
             SshStatus status = sshService.execute(server, command);
             long duration = System.currentTimeMillis() - start;
 
+            String output = status.getMessage();
+            context.getLogConsumer().accept("    [输出] " + (output != null ? output.replace("\n", "\\n") : ""));
+            context.getLogConsumer().accept("    [状态] " + (status.isSuccess() ? "成功" : "失败") + ", 耗时: " + duration + "ms");
+
             if (status.isSuccess()) {
-                String output = status.getMessage();
                 if (outputContainsExpected(output, item.getExpectedOutput())) {
                     return StepResult.success(output, 0);
                 } else {
@@ -297,28 +318,42 @@ public class DelayCheckExecutor {
                     .followRedirects(HttpClient.Redirect.NEVER)
                     .build();
 
-            HttpRequest.Builder builder = HttpRequest.newBuilder()
+            HttpRequest.Builder requestBuilder = HttpRequest.newBuilder()
                     .uri(URI.create(url))
                     .timeout(Duration.ofSeconds(item.getTimeout()))
                     .header("User-Agent", "Easy-Dev-Pipeline/1.0");
 
             String method = item.getHttpMethod() != null ? item.getHttpMethod().toUpperCase() : "GET";
+            String httpBody = null;
             if ("POST".equals(method) && item.getHttpBody() != null && !item.getHttpBody().isEmpty()) {
-                builder.POST(HttpRequest.BodyPublishers.ofString(item.getHttpBody(), StandardCharsets.UTF_8));
-                builder.header("Content-Type", "application/json");
+                httpBody = item.getHttpBody();
+                requestBuilder.POST(HttpRequest.BodyPublishers.ofString(httpBody, StandardCharsets.UTF_8));
+                requestBuilder.header("Content-Type", "application/json");
             } else {
-                builder.GET();
+                requestBuilder.GET();
+            }
+
+            HttpRequest request = requestBuilder.build();
+
+            context.getLogConsumer().accept("    [URL] " + url);
+            context.getLogConsumer().accept("    [方法] " + method);
+            if (httpBody != null) {
+                context.getLogConsumer().accept("    [请求体] " + httpBody);
             }
 
             long start = System.currentTimeMillis();
-            HttpResponse<String> response = client.send(builder.build(), HttpResponse.BodyHandlers.ofString());
+            HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
             long duration = System.currentTimeMillis() - start;
 
             int statusCode = response.statusCode();
             int expectedCode = item.getExpectedStatusCode() > 0 ? item.getExpectedStatusCode() : 200;
+            String body = response.body();
+
+            context.getLogConsumer().accept("    [状态码] " + statusCode + " (期望: " + expectedCode + ")");
+            context.getLogConsumer().accept("    [响应体] " + (body != null && !body.isEmpty() ? body.replace("\n", "\\n") : ""));
+            context.getLogConsumer().accept("    [耗时] " + duration + "ms");
 
             if (statusCode == expectedCode) {
-                String body = response.body();
                 if (body.length() > 500) {
                     body = body.substring(0, 500) + "...";
                 }
@@ -355,15 +390,20 @@ public class DelayCheckExecutor {
             return StepResult.failure("端口号无效: " + port);
         }
 
+        context.getLogConsumer().accept("    [目标] " + host + ":" + port);
+        context.getLogConsumer().accept("    [超时] " + item.getTimeout() + "s");
+
         long start = System.currentTimeMillis();
         try (Socket socket = new Socket()) {
             socket.connect(new InetSocketAddress(host, port), item.getTimeout() * 1000);
             long duration = System.currentTimeMillis() - start;
+            context.getLogConsumer().accept("    [结果] 连通, 延迟: " + duration + "ms");
             StepResult result = StepResult.success("端口 " + host + ":" + port + " 可连通", 0);
             result.setDuration(Duration.ofMillis(duration));
             return result;
         } catch (Exception e) {
             long duration = System.currentTimeMillis() - start;
+            context.getLogConsumer().accept("    [结果] 不可达, 耗时: " + duration + "ms, 原因: " + e.getMessage());
             StepResult result = StepResult.failure("端口 " + host + ":" + port + " 不可达: " + e.getMessage());
             result.setDuration(Duration.ofMillis(duration));
             return result;
