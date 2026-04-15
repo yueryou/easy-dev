@@ -1,10 +1,15 @@
 package io.github.yueryou.easydev.plugin.model;
 
+import org.jetbrains.annotations.Nullable;
+
+import java.util.ArrayList;
+import java.util.List;
+
 /**
  * PipelineStep 的包装类，用于 XmlSerializer 序列化多态类型。
  *
  * 由于 IntelliJ 的 XmlSerializer 不支持多态类型的直接序列化，
- * 需要将不同类型的步骤（LocalCommandStep, UploadStep, RemoteCommandStep）
+ * 需要将不同类型的步骤（LocalCommandStep, UploadStep, RemoteCommandStep, DelayCheckStep）
  * 转换为扁平结构存储，反序列化时再根据 type 字段重建原始类型。
  */
 public class PipelineStepWrapper {
@@ -30,6 +35,14 @@ public class PipelineStepWrapper {
     private String remoteWorkingDir;
     private String remoteCommandId;
     private String remoteServerId;
+
+    // DelayCheckStep 字段
+    private int delayCheckDuration;
+    private int delayCheckInterval;
+    /**
+     * JSON 序列化后的检测项列表
+     */
+    private String delayCheckItemsJson;
 
     public PipelineStepWrapper() {
     }
@@ -66,12 +79,16 @@ public class PipelineStepWrapper {
             this.remoteWorkingDir = remoteStep.getWorkingDir();
             this.remoteCommandId = remoteStep.getCommandId();
             this.remoteServerId = remoteStep.getServerId();
+        } else if (step instanceof DelayCheckStep) {
+            DelayCheckStep checkStep = (DelayCheckStep) step;
+            this.delayCheckDuration = checkStep.getDuration();
+            this.delayCheckInterval = checkStep.getInterval();
+            this.delayCheckItemsJson = serializeCheckItems(checkStep.getCheckItems());
         }
     }
 
     /**
-     * 将包装对象转换为具体的 PipelineStep 实例。
-     * 注意：此方法每次调用都会创建新对象，建议在 getSteps() 中缓存结果。
+     * 将包装对象转换为具体 PipelineStep 实例。
      */
     public PipelineStep toStep() {
         if (type == null) return null;
@@ -101,6 +118,13 @@ public class PipelineStepWrapper {
                 remoteStep.setServerId(remoteServerId);
                 step = remoteStep;
                 break;
+            case DELAY_CHECK:
+                DelayCheckStep checkStep = new DelayCheckStep();
+                checkStep.setDuration(delayCheckDuration);
+                checkStep.setInterval(delayCheckInterval);
+                checkStep.setCheckItems(deserializeCheckItems(delayCheckItemsJson));
+                step = checkStep;
+                break;
             default:
                 return null;
         }
@@ -110,6 +134,104 @@ public class PipelineStepWrapper {
         step.setEnabled(enabled);
         return step;
     }
+
+    // ==================== Serialization Helpers ====================
+
+    private static String serializeCheckItems(List<DelayCheckItem> items) {
+        if (items == null || items.isEmpty()) {
+            return "";
+        }
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < items.size(); i++) {
+            if (i > 0) sb.append("|||");
+            sb.append(serializeItem(items.get(i)));
+        }
+        return sb.toString();
+    }
+
+    private static String serializeItem(DelayCheckItem item) {
+        return item.getType().name() +
+                "::" + escape(item.getName()) +
+                "::" + escape(item.getServerId()) +
+                "::" + escape(item.getCommand()) +
+                "::" + escape(item.getScriptPath()) +
+                "::" + escape(item.getUrl()) +
+                "::" + escape(item.getHttpMethod()) +
+                "::" + escape(item.getHttpBody()) +
+                "::" + item.getExpectedStatusCode() +
+                "::" + escape(item.getHost()) +
+                "::" + item.getPort() +
+                "::" + item.getTimeout() +
+                "::" + escape(item.getExpectedOutput());
+    }
+
+    @Nullable
+    private static List<DelayCheckItem> deserializeCheckItems(String json) {
+        if (json == null || json.isEmpty()) {
+            return new ArrayList<>();
+        }
+        List<DelayCheckItem> items = new ArrayList<>();
+        String[] parts = json.split("\\|\\|\\|");
+        for (String part : parts) {
+            DelayCheckItem item = deserializeItem(part);
+            if (item != null) {
+                items.add(item);
+            }
+        }
+        return items;
+    }
+
+    @Nullable
+    private static DelayCheckItem deserializeItem(String data) {
+        try {
+            String[] parts = data.split("::");
+            if (parts.length < 13) {
+                return null;
+            }
+            DelayCheckItem item = new DelayCheckItem();
+            item.setType(CheckItemType.valueOf(parts[0]));
+            item.setName(unescape(parts[1]));
+            item.setServerId(unescape(parts[2]));
+            item.setCommand(unescape(parts[3]));
+            item.setScriptPath(unescape(parts[4]));
+            item.setUrl(unescape(parts[5]));
+            item.setHttpMethod(unescape(parts[6]));
+            item.setHttpBody(unescape(parts[7]));
+            item.setExpectedStatusCode(Integer.parseInt(parts[8]));
+            item.setHost(unescape(parts[9]));
+            item.setPort(Integer.parseInt(parts[10]));
+            item.setTimeout(Integer.parseInt(parts[11]));
+            item.setExpectedOutput(unescape(parts[12]));
+            return item;
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    private static String escape(String s) {
+        if (s == null) return "";
+        return s.replace("\\", "\\\\").replace(":", "\\:").replace("|", "\\|");
+    }
+
+    private static String unescape(String s) {
+        if (s == null) return "";
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < s.length(); i++) {
+            char c = s.charAt(i);
+            if (c == '\\' && i + 1 < s.length()) {
+                char next = s.charAt(i + 1);
+                if (next == '\\' || next == ':' || next == '|') {
+                    sb.append(next);
+                    i++;
+                    continue;
+                }
+            }
+            sb.append(c);
+        }
+        return sb.toString();
+    }
+
+    // ==================== Getters & Setters ====================
 
     public StepType getType() {
         return type;
@@ -229,5 +351,29 @@ public class PipelineStepWrapper {
 
     public void setRemoteServerId(String remoteServerId) {
         this.remoteServerId = remoteServerId;
+    }
+
+    public int getDelayCheckDuration() {
+        return delayCheckDuration;
+    }
+
+    public void setDelayCheckDuration(int delayCheckDuration) {
+        this.delayCheckDuration = delayCheckDuration;
+    }
+
+    public int getDelayCheckInterval() {
+        return delayCheckInterval;
+    }
+
+    public void setDelayCheckInterval(int delayCheckInterval) {
+        this.delayCheckInterval = delayCheckInterval;
+    }
+
+    public String getDelayCheckItemsJson() {
+        return delayCheckItemsJson;
+    }
+
+    public void setDelayCheckItemsJson(String delayCheckItemsJson) {
+        this.delayCheckItemsJson = delayCheckItemsJson;
     }
 }
