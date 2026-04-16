@@ -47,6 +47,9 @@ public class PluginSetting {
     private String sshLogDirectory = "~/logs";
     private int logRetentionDays = 30;
 
+    // Unified Logger Settings
+    private String unifiedLogLevel = "INFO";
+
     // SFTP/SCP
     private boolean preferSftpOverScp = true;
 
@@ -209,5 +212,13 @@ public class PluginSetting {
 
     public void setPreferSftpOverScp(boolean preferSftpOverScp) {
         this.preferSftpOverScp = preferSftpOverScp;
+    }
+
+    public String getUnifiedLogLevel() {
+        return unifiedLogLevel != null ? unifiedLogLevel : "INFO";
+    }
+
+    public void setUnifiedLogLevel(String unifiedLogLevel) {
+        this.unifiedLogLevel = unifiedLogLevel;
     }
 }

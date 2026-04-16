@@ -6,6 +6,7 @@ import com.intellij.openapi.options.ConfigurableGroup;
 import com.intellij.openapi.project.Project;
 import org.jetbrains.annotations.NotNull;
 import tech.lin2j.idea.plugin.ui.settings.GeneralConfigurable;
+import tech.lin2j.idea.plugin.ui.settings.LogLevelConfigurable;
 import tech.lin2j.idea.plugin.ui.settings.SFTPConfigurable;
 import tech.lin2j.idea.plugin.ui.settings.ServerTagConfigurable;
 
@@ -20,7 +21,8 @@ public class PluginSettingsDialog {
         return new Configurable[]{
                 new GeneralConfigurable(),
                 new ServerTagConfigurable(),
-                new SFTPConfigurable()
+                new SFTPConfigurable(),
+                new LogLevelConfigurable()
         };
     }
 

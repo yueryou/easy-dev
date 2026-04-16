@@ -19,7 +19,9 @@ import io.github.yueryou.easydev.plugin.model.StepType;
 import io.github.yueryou.easydev.plugin.ui.dialog.PipelineEditDialog;
 import io.github.yueryou.easydev.plugin.ui.render.PipelineListCellRenderer;
 import org.jetbrains.annotations.NotNull;
+import tech.lin2j.idea.plugin.event.ApplicationListener;
 import tech.lin2j.idea.plugin.model.ConfigHelper;
+import tech.lin2j.idea.plugin.model.event.PipelineRefreshEvent;
 import tech.lin2j.idea.plugin.service.impl.PluginNotificationService;
 import tech.lin2j.idea.plugin.ssh.CommandLog;
 import tech.lin2j.idea.plugin.ssh.SshServer;
@@ -35,13 +37,18 @@ import java.util.List;
 import java.util.function.Consumer;
 
 import com.intellij.execution.ui.ConsoleViewContentType;
+import tech.lin2j.idea.plugin.event.ApplicationListener;
+import tech.lin2j.idea.plugin.event.ApplicationEvent;
 import io.github.yueryou.easydev.plugin.executor.PipelineExecutor;
+import io.github.yueryou.easydev.plugin.action.CopyPipelineAction;
+import io.github.yueryou.easydev.plugin.action.PastePipelineAction;
+import io.github.yueryou.easydev.plugin.log.UnifiedLogger;
 import io.github.yueryou.easydev.plugin.model.PipelineResult;
 
 /**
  * 自定义任务流水线面板
  */
-public class CommandPipelinePanel extends JPanel {
+public class CommandPipelinePanel extends JPanel implements ApplicationListener<PipelineRefreshEvent> {
 
     private final Project project;
     private final JPanel root;
@@ -57,6 +64,7 @@ public class CommandPipelinePanel extends JPanel {
     private JBList<Pipeline> pipelineList;
 
     private final PluginNotificationService notificationService;
+    private final UnifiedLogger logger = UnifiedLogger.getInstance();
 
     /**
      * 双击执行流水线后的回调（用于关闭弹窗）
@@ -66,7 +74,6 @@ public class CommandPipelinePanel extends JPanel {
     public CommandPipelinePanel(Project project) {
         this.project = project;
         this.notificationService = ApplicationManager.getApplication().getService(PluginNotificationService.class);
-
         initInput();
         initPipelineList();
         bindInputChangeListener(loadPipelineList());
@@ -83,9 +90,17 @@ public class CommandPipelinePanel extends JPanel {
         searchInput.getEmptyText().setText(MessagesBundle.getText("pipeline.search.placeholder"));
     }
 
+    private CopyPipelineAction copyPipelineAction;
+    private PastePipelineAction pastePipelineAction;
+
     private void initPipelineList() {
         pipelineList = new JBList<>();
         pipelineList.setCellRenderer(new PipelineListCellRenderer());
+
+        // Initialize copy/paste actions with pipeline list selection
+        copyPipelineAction = new CopyPipelineAction(() -> pipelineList.getSelectedValue());
+        pastePipelineAction = new PastePipelineAction(project);
+
         new DoubleClickListener() {
             @Override
             protected boolean onDoubleClick(MouseEvent e) {
@@ -128,6 +143,8 @@ public class CommandPipelinePanel extends JPanel {
                         loadPipelineList();
                     }
                 })
+                .addExtraAction(copyPipelineAction)
+                .addExtraAction(pastePipelineAction)
                 .createPanel();
     }
 
@@ -136,6 +153,13 @@ public class CommandPipelinePanel extends JPanel {
         if (dialog.showAndGet()) {
             loadPipelineList();
         }
+    }
+
+    @Override
+    public void onApplicationEvent(PipelineRefreshEvent event) {
+        logger.debug("CommandPipelinePanel", "Received PipelineRefreshEvent, refreshing pipeline list");
+        loadPipelineList();
+        logger.debug("CommandPipelinePanel", "Pipeline list refreshed successfully");
     }
 
     private void bindInputChangeListener(List<Pipeline> pipelines) {
@@ -156,8 +180,10 @@ public class CommandPipelinePanel extends JPanel {
     }
 
     public List<Pipeline> loadPipelineList() {
+        logger.debug("CommandPipelinePanel", "Loading pipeline list");
         List<Pipeline> pipelines = PipelineConfigPersistence.getAllPipelines();
         pipelineList.setListData(pipelines.toArray(new Pipeline[0]));
+        logger.debug("CommandPipelinePanel", "Pipeline list loaded with " + (pipelines != null ? pipelines.size() : 0) + " items");
         return pipelines;
     }
 

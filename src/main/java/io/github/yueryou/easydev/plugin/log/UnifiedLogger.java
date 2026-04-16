@@ -3,6 +3,7 @@ package io.github.yueryou.easydev.plugin.log;
 import com.intellij.openapi.actionSystem.AnAction;
 import com.intellij.openapi.actionSystem.AnActionEvent;
 import com.intellij.openapi.diagnostic.Logger;
+import tech.lin2j.idea.plugin.model.ConfigHelper;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
@@ -48,6 +49,9 @@ public class UnifiedLogger {
     private final AtomicLong currentFileSize = new AtomicLong(0);
     private final ReentrantLock writeLock = new ReentrantLock();
 
+    // 日志级别控制
+    private volatile Level minLevel = null; // null means no filtering (original behavior)
+
     // 日志文件
     private final Path logDir;
     private volatile Path currentLogFile;
@@ -59,29 +63,57 @@ public class UnifiedLogger {
 
     // 日志级别
     public enum Level {
-        DEBUG("DEBUG", false),
-        INFO("INFO", false),
-        WARN("WARN", false),
-        ERROR("ERROR", false),
-        EXCEPTION("EXCEPTION", true),    // 异常专用
-        NULL_DATA("NULL", true),         // null 数据专用
-        ACTION("ACTION", false),         // Action 执行
-        BUTTON("BUTTON", false),         // 按钮点击
-        FLOW("FLOW", false),             // 关键流程
-        SSH("SSH", false),               // SSH 操作
-        FILE_TRANSFER("FILE", false),    // 文件传输
-        TOOL("TOOL", false);             // MCP 工具调用
+        DEBUG("DEBUG", false, 10),
+        INFO("INFO", false, 20),
+        WARN("WARN", false, 30),
+        ERROR("ERROR", false, 40),
+        EXCEPTION("EXCEPTION", true, 40),    // 异常专用
+        NULL_DATA("NULL", true, 30),         // null 数据专用
+        ACTION("ACTION", false, 20),         // Action 执行
+        BUTTON("BUTTON", false, 20),         // 按钮点击
+        FLOW("FLOW", false, 20),             // 关键流程
+        SSH("SSH", false, 20),               // SSH 操作
+        FILE_TRANSFER("FILE", false, 20),    // 文件传输
+        TOOL("TOOL", false, 20);             // MCP 工具调用
 
         private final String name;
         private final boolean highlight;
+        private final int priority;
 
-        Level(String name, boolean highlight) {
+        Level(String name, boolean highlight, int priority) {
             this.name = name;
             this.highlight = highlight;
+            this.priority = priority;
         }
 
         public String getName() { return name; }
         public boolean isHighlight() { return highlight; }
+        public int getPriority() { return priority; }
+
+        /**
+         * 检查当前级别是否应该被记录（基于最小级别设置）
+         */
+        public boolean shouldLog(Level minLevel) {
+            if (minLevel == null) return true; // 无过滤，全部记录
+            return this.priority >= minLevel.priority;
+        }
+
+        /**
+         * 从字符串解析级别（支持标准级别名称）
+         */
+        public static Level fromString(String levelStr) {
+            if (levelStr == null) return null;
+            String upper = levelStr.toUpperCase();
+            switch (upper) {
+                case "DEBUG": return DEBUG;
+                case "INFO": return INFO;
+                case "WARN":
+                case "WARNING": return WARN;
+                case "ERROR": return ERROR;
+                case "OFF": return null; // OFF 表示不记录任何日志
+                default: return INFO; // 默认 INFO
+            }
+        }
     }
 
     // 日志条目
@@ -124,6 +156,9 @@ public class UnifiedLogger {
 
         // 启动写入线程
         startWriterThread();
+
+        // 初始化日志级别（从设置中加载）
+        initLogLevel(ConfigHelper.pluginSetting().getUnifiedLogLevel());
 
         IDE_LOG.info("UnifiedLogger initialized, log dir: " + logDir);
     }
@@ -218,6 +253,8 @@ public class UnifiedLogger {
      */
     public void log(Level level, String category, String action, String message) {
         if (!enabled.get()) return;
+        // 检查日志级别过滤
+        if (!level.shouldLog(minLevel)) return;
         enqueueLog(level, category, action, message, null);
     }
 
@@ -226,6 +263,8 @@ public class UnifiedLogger {
      */
     public void logException(String category, String action, String message, Throwable throwable) {
         if (!enabled.get()) return;
+        // 检查日志级别过滤
+        if (!Level.EXCEPTION.shouldLog(minLevel)) return;
         enqueueLog(Level.EXCEPTION, category, action, message, throwable);
         IDE_LOG.error("[" + category + "] " + message, throwable);
     }
@@ -235,6 +274,8 @@ public class UnifiedLogger {
      */
     public void logNullData(String category, String fieldName, String context) {
         if (!enabled.get()) return;
+        // 检查日志级别过滤
+        if (!Level.NULL_DATA.shouldLog(minLevel)) return;
         String message = "Field is null: " + fieldName + " | Context: " + context;
         enqueueLog(Level.NULL_DATA, category, "NULL_CHECK", message, null);
         IDE_LOG.warn("[" + category + "] " + message);
@@ -560,5 +601,30 @@ public class UnifiedLogger {
         } else {
             getInstance().logFlowEnd(flowName, success, durationMs);
         }
+    }
+
+    /**
+     * 更新日志级别（用于动态切换）
+     */
+    public void updateLogLevel(String levelStr) {
+        Level newLevel = Level.fromString(levelStr);
+        this.minLevel = newLevel;
+        if (enabled.get()) {
+            log(Level.INFO, "SYSTEM", "LOG_LEVEL", "Log level changed to: " + levelStr);
+        }
+    }
+
+    /**
+     * 获取当前日志级别字符串
+     */
+    public String getCurrentLogLevel() {
+        return minLevel != null ? minLevel.getName() : "OFF";
+    }
+
+    /**
+     * 初始化日志级别（从设置中加载）
+     */
+    public void initLogLevel(String levelStr) {
+        this.minLevel = Level.fromString(levelStr);
     }
 }

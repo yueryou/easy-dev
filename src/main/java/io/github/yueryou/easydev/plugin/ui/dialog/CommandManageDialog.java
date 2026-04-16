@@ -74,6 +74,7 @@ public class CommandManageDialog extends DialogWrapper {
 
         root.add(tabs);
         ApplicationContext.getApplicationContext().addApplicationListener(commandManagePanel);
+        ApplicationContext.getApplicationContext().addApplicationListener(commandPipelinePanel);
         return tabs;
     }
 }
