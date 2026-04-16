@@ -179,10 +179,16 @@ public class CommandManagePanel extends JPanel implements ApplicationListener<Co
             protected boolean onDoubleClick(MouseEvent e) {
                 Command command = commandList.getSelectedValue();
                 if (command != null) {
+                    // 先捕获命令和选中的 session（对话框关闭前 UI 可用）
+                    Command capturedCommand = command;
+                    List<String> capturedSessions = searchableCheckboxList.getSelectedItems();
+                    // 关闭对话框，让焦点回到终端
                     if (onDoubleClickExecute != null) {
                         onDoubleClickExecute.run();
                     }
-                    executeCommand();
+                    // 对话框关闭后，焦点回到终端，此时再查找活跃终端和发送命令
+                    SwingUtilities.invokeLater(() ->
+                        executeCommandAfterDialogClose(capturedCommand, capturedSessions));
                 }
                 return true;
             }
@@ -251,6 +257,46 @@ public class CommandManagePanel extends JPanel implements ApplicationListener<Co
     }
 
     /**
+     * 对话框关闭后执行命令（焦点已回到终端，可正确查找活跃终端）
+     * 通过 SwingUtilities.invokeLater 调用，确保对话框已完全关闭
+     */
+    private void executeCommandAfterDialogClose(Command capturedCommand, List<String> capturedSessions) {
+        if (project == null) return;
+
+        String title = "Send command";
+        ProgressManager.getInstance().run(new Task.Backgroundable(project, title) {
+            @Override
+            public void run(@NotNull ProgressIndicator indicator) {
+                TerminalView instance = TerminalView.getInstance(project);
+
+                if (capturedCommand == null) {
+                    notificationService.showNotification(project, title, "no command selected");
+                    return;
+                }
+
+                List<JBTerminalWidget> targetWidgets;
+
+                // 如果未选中任何 session，查找当前激活的终端窗口
+                if (capturedSessions.isEmpty()) {
+                    JBTerminalWidget activeWidget = findActiveTerminalWidget(instance);
+                    if (activeWidget == null) {
+                        notificationService.showNotification(project, title, "no active terminal found");
+                        return;
+                    }
+                    targetWidgets = List.of(activeWidget);
+                } else {
+                    // 根据 session name 过滤终端
+                    targetWidgets = instance.getWidgets().stream()
+                            .filter(it -> capturedSessions.contains(it.getTerminalTitle().getDefaultTitle()))
+                            .collect(Collectors.toList());
+                }
+
+                doSendCommand(targetWidgets, capturedCommand);
+            }
+        });
+    }
+
+    /**
      * 向目标session发送指令
      */
     public void executeCommand() {
@@ -287,22 +333,29 @@ public class CommandManagePanel extends JPanel implements ApplicationListener<Co
                             .collect(Collectors.toList());
                 }
 
-                // 向目标终端发送命令
-                for (JBTerminalWidget terminalWidget : targetWidgets) {
-                    String sessionName = terminalWidget.getTerminalTitle().getDefaultTitle();
-                    TtyConnector ttyConnector = terminalWidget.getTtyConnector();
-                    if (ttyConnector != null) {
-                        try {
-                            String command = selectedValue.generateCmdLine();
-                            ttyConnector.write(command + "\r");
-                        } catch (IOException e) {
-                            String msg = sessionName + " send failed: " + e.getMessage();
-                            notificationService.showNotification(project, title, msg);
-                        }
-                    }
-                }
+                doSendCommand(targetWidgets, selectedValue);
             }
         });
+    }
+
+    /**
+     * 向终端发送命令（公共逻辑）
+     */
+    private void doSendCommand(List<JBTerminalWidget> targetWidgets, Command command) {
+        String title = "Send command";
+        for (JBTerminalWidget terminalWidget : targetWidgets) {
+            String sessionName = terminalWidget.getTerminalTitle().getDefaultTitle();
+            TtyConnector ttyConnector = terminalWidget.getTtyConnector();
+            if (ttyConnector != null) {
+                try {
+                    String cmd = command.generateCmdLine();
+                    ttyConnector.write(cmd + "\r");
+                } catch (IOException e) {
+                    String msg = sessionName + " send failed: " + e.getMessage();
+                    notificationService.showNotification(project, title, msg);
+                }
+            }
+        }
     }
 
     /**

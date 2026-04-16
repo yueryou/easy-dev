@@ -91,10 +91,15 @@ public class CommandPipelinePanel extends JPanel {
             protected boolean onDoubleClick(MouseEvent e) {
                 Pipeline pipeline = pipelineList.getSelectedValue();
                 if (pipeline != null) {
+                    // 先捕获 pipeline（对话框关闭前 UI 可用）
+                    Pipeline capturedPipeline = pipeline;
+                    // 关闭对话框，让焦点回到终端
                     if (onDoubleClickExecute != null) {
                         onDoubleClickExecute.run();
                     }
-                    executeSelectedPipeline();
+                    // 对话框关闭后，再执行流水线
+                    SwingUtilities.invokeLater(() ->
+                        executePipelineAfterDialogClose(capturedPipeline));
                 }
                 return true;
             }
@@ -173,6 +178,53 @@ public class CommandPipelinePanel extends JPanel {
      */
     public void executeSelectedPipeline() {
         executePipelineFromStep(0);
+    }
+
+    /**
+     * 对话框关闭后执行流水线（通过 SwingUtilities.invokeLater 调用）
+     */
+    private void executePipelineAfterDialogClose(Pipeline pipeline) {
+        if (pipeline == null) {
+            notificationService.showNotification(project, MessagesBundle.getText("pipeline.notification.title.running"),
+                MessagesBundle.getText("pipeline.error.no.selected"));
+            return;
+        }
+        if (pipeline.getPipelineSteps() == null || pipeline.getPipelineSteps().isEmpty()) {
+            notificationService.showNotification(project, MessagesBundle.getText("pipeline.notification.title.running"),
+                MessagesBundle.getText("pipeline.error.no.steps"));
+            return;
+        }
+
+        Consumer<String> logConsumer = message -> {
+            CommandLog commandLog = project.getUserData(CommandLog.COMMAND_LOG_KEY);
+            if (commandLog != null) {
+                commandLog.print(message + "\n", ConsoleViewContentType.NORMAL_OUTPUT);
+            }
+        };
+
+        ApplicationManager.getApplication().invokeLater(() -> {
+            ToolWindowManager toolWindowManager = ToolWindowManager.getInstance(project);
+            com.intellij.openapi.wm.ToolWindow toolWindow = toolWindowManager.getToolWindow("Easy Dev");
+            if (toolWindow != null) {
+                toolWindow.show(() -> {
+                    var contentManager = toolWindow.getContentManager();
+                    var consoleContent = contentManager.findContent("Console");
+                    if (consoleContent != null) {
+                        contentManager.setSelectedContent(consoleContent);
+                        CommandLog commandLog = project.getUserData(CommandLog.COMMAND_LOG_KEY);
+                        if (commandLog == null && consoleContent.getComponent() instanceof ConsoleLogView) {
+                            ((ConsoleLogView) consoleContent.getComponent()).attachProject();
+                        }
+                        if (commandLog != null && commandLog.getConsole() != null) {
+                            commandLog.getConsole().clear();
+                        }
+                        executePipelineAsync(pipeline, 0, logConsumer);
+                    }
+                });
+            } else {
+                executePipelineAsync(pipeline, 0, logConsumer);
+            }
+        });
     }
 
     private void executePipelineFromStep(int startIndex) {
