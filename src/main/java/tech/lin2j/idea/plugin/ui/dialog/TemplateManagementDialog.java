@@ -10,11 +10,12 @@ import com.intellij.util.ui.JBUI;
 import org.jetbrains.annotations.Nullable;
 import tech.lin2j.idea.plugin.enums.AuthType;
 import tech.lin2j.idea.plugin.model.CredentialTemplate;
-import tech.lin2j.idea.plugin.service.TemplateAuditLogger;
 import tech.lin2j.idea.plugin.service.TemplateManager;
 import tech.lin2j.idea.plugin.uitl.MessagesBundle;
 
 import javax.swing.*;
+import javax.swing.event.DocumentEvent;
+import javax.swing.event.DocumentListener;
 import javax.swing.table.AbstractTableModel;
 import java.awt.*;
 import java.util.ArrayList;
@@ -59,8 +60,22 @@ public class TemplateManagementDialog extends DialogWrapper {
 
         // Search field
         searchField = new SearchTextField();
-        searchField.setTextAndAddToHistory(MessagesBundle.getText("dialog.template-management.search.placeholder"));
-        searchField.addTextListener(() -> filterTable());
+        searchField.getTextEditor().getDocument().addDocumentListener(new DocumentListener() {
+            @Override
+            public void insertUpdate(DocumentEvent e) {
+                filterTable();
+            }
+
+            @Override
+            public void removeUpdate(DocumentEvent e) {
+                filterTable();
+            }
+
+            @Override
+            public void changedUpdate(DocumentEvent e) {
+                filterTable();
+            }
+        });
         toolbar.add(searchField, BorderLayout.CENTER);
 
         // Action buttons
@@ -178,7 +193,6 @@ public class TemplateManagementDialog extends DialogWrapper {
 
         if (result == Messages.YES) {
             TemplateManager.getInstance().removeTemplate(template.getUid());
-            TemplateAuditLogger.logTemplateDeletion(template.getUid(), template.getName());
             allTemplates.remove(template);
             refreshTable();
         }

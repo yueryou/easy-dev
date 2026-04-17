@@ -4,6 +4,7 @@ import com.intellij.openapi.fileChooser.FileChooserDescriptor;
 import com.intellij.openapi.fileChooser.FileChooserDescriptorFactory;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.ui.DialogWrapper;
+import com.intellij.openapi.ui.Messages;
 import com.intellij.openapi.ui.TextBrowseFolderListener;
 import com.intellij.openapi.ui.TextFieldWithBrowseButton;
 import com.intellij.ui.components.JBLabel;
@@ -13,7 +14,6 @@ import com.intellij.uiDesigner.core.GridLayoutManager;
 import org.jetbrains.annotations.Nullable;
 import tech.lin2j.idea.plugin.enums.AuthType;
 import tech.lin2j.idea.plugin.model.CredentialTemplate;
-import tech.lin2j.idea.plugin.service.TemplateAuditLogger;
 import tech.lin2j.idea.plugin.service.TemplateManager;
 import tech.lin2j.idea.plugin.uitl.MessagesBundle;
 
@@ -295,9 +295,6 @@ public class CredentialTemplateEditDialog extends DialogWrapper {
 
         if (isNewMode) {
             TemplateManager.getInstance().addTemplate(template);
-            TemplateAuditLogger.logTemplateCreation(template.getUid(), template.getName());
-        } else {
-            TemplateAuditLogger.logTemplateModification(template.getUid(), template.getName());
         }
 
         resultTemplate = template;
