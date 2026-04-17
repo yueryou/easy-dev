@@ -27,6 +27,7 @@ dependencies {
     implementation 'com.hierynomus:sshj:0.39.0'
     testImplementation 'org.junit.jupiter:junit-jupiter:5.8.2'
     testImplementation 'org.junit.vintage:junit-vintage-engine:5.8.2'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
     // See https://github.com/JetBrains/gradle-intellij-plugin/
     intellijPlatform {
 //        create("IC","2022.3.3", false)

@@ -7,6 +7,8 @@ import java.util.Map;
 
 public class CredentialTemplate implements UniqueModel {
 
+    private String uid;
+
     private String name;
     private String description;
     private String username;
@@ -70,13 +72,11 @@ public class CredentialTemplate implements UniqueModel {
 
     @Override
     public String getUid() {
-        // UniqueModel接口方法实现
-        return null; // 将由ConfigPersistence.checkUid()方法填充
+        return uid;
     }
 
     @Override
     public void setUid(String uid) {
-        // 设置唯一标识符
-        throw new UnsupportedOperationException("setUid should not be called directly");
+        this.uid = uid;
     }
 }

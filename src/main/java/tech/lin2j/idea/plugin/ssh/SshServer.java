@@ -7,11 +7,13 @@ import com.intellij.ide.passwordSafe.PasswordSafe;
 import com.intellij.util.xmlb.annotations.Transient;
 import tech.lin2j.idea.plugin.enums.AuthType;
 import tech.lin2j.idea.plugin.model.UniqueModel;
+import tech.lin2j.idea.plugin.service.TemplateManager;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
+import java.util.UUID;
 
 /**
  * @author linjinjia

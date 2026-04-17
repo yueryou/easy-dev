@@ -329,5 +329,9 @@
         />
         <applicationService serviceImplementation="tech.lin2j.idea.plugin.model.ConfigPersistence"/>
         <configurationType implementation="tech.lin2j.idea.plugin.runner.DeployRunConfigurationType"/>
+        <applicationConfigurable parentId="tools"
+                                 instance="tech.lin2j.idea.plugin.ui.settings.TemplateConfigurable"
+                                 id="tech.lin2j.idea.plugin.ui.settings.TemplateConfigurable"
+                                 displayName="SSH 密钥模板"/>
     </extensions>
 </idea-plugin>

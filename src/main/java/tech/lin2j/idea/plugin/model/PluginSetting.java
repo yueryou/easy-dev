@@ -53,6 +53,10 @@ public class PluginSetting {
     // SFTP/SCP
     private boolean preferSftpOverScp = true;
 
+    // Template Settings
+    private boolean autoSaveTemplateChanges = true;
+    private boolean autoValidateTemplateCredentials = false;
+
 
     public boolean isUpdateCheck() {
         return updateCheck;
@@ -220,5 +224,21 @@ public class PluginSetting {
 
     public void setUnifiedLogLevel(String unifiedLogLevel) {
         this.unifiedLogLevel = unifiedLogLevel;
+    }
+
+    public boolean isAutoSaveTemplateChanges() {
+        return autoSaveTemplateChanges;
+    }
+
+    public void setAutoSaveTemplateChanges(boolean autoSaveTemplateChanges) {
+        this.autoSaveTemplateChanges = autoSaveTemplateChanges;
+    }
+
+    public boolean isAutoValidateTemplateCredentials() {
+        return autoValidateTemplateCredentials;
+    }
+
+    public void setAutoValidateTemplateCredentials(boolean autoValidateTemplateCredentials) {
+        this.autoValidateTemplateCredentials = autoValidateTemplateCredentials;
     }
 }
