@@ -3,6 +3,8 @@ package tech.lin2j.idea.plugin.ssh;
 import com.intellij.execution.ui.ConsoleView;
 import com.intellij.execution.ui.ConsoleViewContentType;
 
+import java.time.LocalTime;
+import java.time.format.DateTimeFormatter;
 import java.util.concurrent.FutureTask;
 
 /**
@@ -12,6 +14,8 @@ import java.util.concurrent.FutureTask;
  * @date 2024/11/28 22:14
  */
 public class ConsoleCommandLog implements CommandLog {
+    private static final DateTimeFormatter TIME_FORMATTER = DateTimeFormatter.ofPattern("HH:mm:ss");
+
     private final ConsoleView console;
 
     public ConsoleCommandLog(ConsoleView console) {
@@ -25,7 +29,11 @@ public class ConsoleCommandLog implements CommandLog {
 
     @Override
     public void print(String msg, ConsoleViewContentType contentType) {
-        console.print(msg, contentType);
+        if (msg == null) {
+            return;
+        }
+        String timestamp = "[" + LocalTime.now().format(TIME_FORMATTER) + "] ";
+        console.print(timestamp + msg, contentType);
     }
 
     @Override

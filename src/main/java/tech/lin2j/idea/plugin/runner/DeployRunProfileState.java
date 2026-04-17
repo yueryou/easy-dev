@@ -22,6 +22,7 @@ import tech.lin2j.idea.plugin.model.DeployProfile;
 import tech.lin2j.idea.plugin.ssh.SshUploadTask;
 
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.Iterator;
 import java.util.List;
 
@@ -80,6 +81,9 @@ public class DeployRunProfileState extends CommandLineState {
                         console.print(e.getMessage() + "\n", ConsoleViewContentType.ERROR_OUTPUT);
                     }
                 }
+
+                String time = LocalDateTime.now().format(DateTimeFormatter.ofPattern("HH:mm:ss"));
+                console.print("\n========== 任务完成 " + time + " ==========\n", ConsoleViewContentType.LOG_INFO_OUTPUT);
 
                 process.destroyProcess();
             }

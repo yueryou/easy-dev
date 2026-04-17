@@ -33,6 +33,8 @@ import javax.swing.*;
 import javax.swing.event.DocumentEvent;
 import java.awt.*;
 import java.awt.event.MouseEvent;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.function.Consumer;
 
@@ -316,6 +318,9 @@ public class CommandPipelinePanel extends JPanel implements ApplicationListener<
             public void run(@NotNull ProgressIndicator indicator) {
                 try {
                     PipelineResult result = PipelineExecutor.executeFromStep(pipeline, null, project, logConsumer, startIndex);
+
+                    String time = LocalDateTime.now().format(DateTimeFormatter.ofPattern("HH:mm:ss"));
+                    logConsumer.accept("\n========== 流水线完成 " + time + " ==========");
 
                     // 显示执行结果通知
                     ApplicationManager.getApplication().invokeLater(() -> {

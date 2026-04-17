@@ -24,6 +24,8 @@ import tech.lin2j.idea.plugin.runner.process.ListProcessHandler;
 import tech.lin2j.idea.plugin.runner.process.UploadProcessHandler;
 import tech.lin2j.idea.plugin.ssh.SshUploadTask;
 
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -162,6 +164,8 @@ public class ParallelDeployRunProfileState extends CommandLineState {
             } catch (Exception e) {
                 console.print(e.getMessage() + "\n", ConsoleViewContentType.ERROR_OUTPUT);
             } finally {
+                String time = LocalDateTime.now().format(DateTimeFormatter.ofPattern("HH:mm:ss"));
+                console.print("\n========== 任务完成 " + time + " ==========\n", ConsoleViewContentType.LOG_INFO_OUTPUT);
                 processHandler.notifyProcessTerminated(0);
             }
         }
