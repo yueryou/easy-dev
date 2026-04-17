@@ -57,6 +57,12 @@ public class SshServer implements Cloneable, UniqueModel {
      */
     private String pemPrivateKey;
 
+    /** UID of the credential template used to populate credentials */
+    private String templateId;
+
+    /** Flag indicating whether template credentials are enabled for this server */
+    private boolean useTemplateCredentials;
+
     /**
      * the command exit code that indicates the command is executed successfully
      */
@@ -77,12 +83,19 @@ public class SshServer implements Cloneable, UniqueModel {
 
     @Transient
     public String getPassword() {
+        if (useTemplateCredentials && templateId != null && !templateId.isEmpty()) {
+            return TemplateManager.getTemplatePassword(templateId);
+        }
         return loadPassword(getKey());
     }
 
     @Transient
     public void setPassword(String password) {
-        savePassword(password, getKey());
+        if (useTemplateCredentials && templateId != null && !templateId.isEmpty()) {
+            TemplateManager.saveTemplatePassword(templateId, password);
+        } else {
+            savePassword(password, getKey());
+        }
     }
 
     public Integer getId() {
@@ -165,6 +178,11 @@ public class SshServer implements Cloneable, UniqueModel {
     public void setPemPrivateKey(String pemPrivateKey) {
         this.pemPrivateKey = pemPrivateKey;
     }
+
+    public String getTemplateId() { return templateId; }
+    public void setTemplateId(String templateId) { this.templateId = templateId; }
+    public boolean isUseTemplateCredentials() { return useTemplateCredentials; }
+    public void setUseTemplateCredentials(boolean useTemplateCredentials) { this.useTemplateCredentials = useTemplateCredentials; }
 
     @Transient
     public String getPassPhrase() {

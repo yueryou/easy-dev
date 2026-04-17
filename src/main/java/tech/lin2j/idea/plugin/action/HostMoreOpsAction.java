@@ -43,6 +43,30 @@ public class HostMoreOpsAction implements ActionListener {
     @Override
     public void actionPerformed(ActionEvent e) {
         JPopupMenu menu = new JPopupMenu();
+
+        // New Connection from Server
+        String newConnText = MessagesBundle.getText("action.new-connection.prompt.title");
+        menu.add(new JMenuItem(new AbstractAction(newConnText) {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                SshServer server = ConfigHelper.getSshServerById(sshId);
+                new CreateNewConnectionFromServerAction(project, server).actionPerformed(null);
+            }
+        }));
+
+        // Copy Server
+        String copyText = MessagesBundle.getText("action.copy-server.prompt.title");
+        menu.add(new JMenuItem(new AbstractAction(copyText) {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                SshServer server = ConfigHelper.getSshServerById(sshId);
+                new CopySshServerAction(project, server).actionPerformed(null);
+            }
+        }));
+
+        // Separator
+        menu.addSeparator();
+
         String propertiesText = MessagesBundle.getText("table.action.button.more.properties");
         menu.add(new JMenuItem(new AbstractAction(propertiesText) {
             @Override
