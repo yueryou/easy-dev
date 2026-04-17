@@ -40,6 +40,8 @@ public class ConfigPersistence implements PersistentStateComponent<ConfigPersist
 
     private List<io.github.yueryou.easydev.plugin.model.Pipeline> pipelines;
 
+    private List<CredentialTemplate> credentialTemplates;
+
     @Override
     public @Nullable ConfigPersistence getState() {
         return this;
@@ -158,6 +160,35 @@ public class ConfigPersistence implements PersistentStateComponent<ConfigPersist
 
     public void setSetting(PluginSetting setting) {
         this.setting = setting;
+    }
+
+    public List<CredentialTemplate> getCredentialTemplates() {
+        if (credentialTemplates == null) {
+            credentialTemplates = new CopyOnWriteArrayList<>();
+        }
+        checkUid(credentialTemplates);
+        return credentialTemplates;
+    }
+
+    public void setCredentialTemplates(List<CredentialTemplate> credentialTemplates) {
+        this.credentialTemplates = credentialTemplates;
+    }
+
+    public void addCredentialTemplate(CredentialTemplate template) {
+        if (template != null) {
+            getCredentialTemplates().add(template);
+        }
+    }
+
+    public boolean removeCredentialTemplate(String templateId) {
+        return getCredentialTemplates().removeIf(t -> t.getUid().equals(templateId));
+    }
+
+    public CredentialTemplate findTemplateById(String templateId) {
+        return getCredentialTemplates().stream()
+            .filter(t -> t.getUid().equals(templateId))
+            .findFirst()
+            .orElse(null);
     }
 
     private void checkUid(List<? extends UniqueModel> list) {
