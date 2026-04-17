@@ -122,14 +122,8 @@ public class DelayCheckExecutor {
         switch (item.getType()) {
             case REMOTE_COMMAND:
                 return executeRemoteCommand(item, context);
-            case LOCAL_SCRIPT:
-                return executeLocalScript(item, context);
-            case REMOTE_SCRIPT:
-                return executeRemoteScript(item, context);
             case HTTP_REQUEST:
                 return executeHttpRequest(item, context);
-            case PORT_PROBE:
-                return executePortProbe(item, context);
             default:
                 return StepResult.failure("未知的检测类型: " + item.getType());
         }

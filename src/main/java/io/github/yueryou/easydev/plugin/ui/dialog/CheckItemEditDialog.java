@@ -31,27 +31,17 @@ public class CheckItemEditDialog extends DialogWrapper {
     private JComboBox<String> remoteServerComboBox;
     private JTextField remoteCommandField;
 
-    // Script fields
-    private JTextField scriptPathField;
-    private JComboBox<String> scriptServerComboBox;
-
     // HTTP fields
     private JTextField httpUrlField;
     private JComboBox<String> httpMethodComboBox;
     private JTextField httpBodyField;
     private JTextField httpExpectedCodeField;
 
-    // Port probe fields
-    private JTextField portHostField;
-    private JTextField portField;
-
     // Common timeout
     private JTextField timeoutField;
 
     // Expected output fields (one per type to avoid shared instance bug)
     private JTextField remoteCommandExpectedOutputField;
-    private JTextField localScriptExpectedOutputField;
-    private JTextField remoteScriptExpectedOutputField;
     private JTextField httpExpectedOutputField;
 
     private JPanel cardsPanel;
@@ -73,7 +63,10 @@ public class CheckItemEditDialog extends DialogWrapper {
     @Override
     protected JComponent createCenterPanel() {
         nameField = new JTextField(30);
-        typeComboBox = new JComboBox<>(CheckItemType.values());
+        typeComboBox = new JComboBox<>(new CheckItemType[]{
+                CheckItemType.REMOTE_COMMAND,
+                CheckItemType.HTTP_REQUEST
+        });
         typeComboBox.addActionListener(e -> onTypeChanged());
 
         timeoutField = new JTextField("10", 10);
@@ -83,29 +76,18 @@ public class CheckItemEditDialog extends DialogWrapper {
         List<String> serverItems = buildServerItems();
         remoteServerComboBox = new JComboBox<>(serverItems.toArray(new String[0]));
 
-        // 脚本组件
-        scriptPathField = new JTextField(30);
-        scriptServerComboBox = new JComboBox<>(serverItems.toArray(new String[0]));
-
         // HTTP 组件
         httpUrlField = new JTextField(30);
         httpMethodComboBox = new JComboBox<>(new String[]{"GET", "POST", "PUT", "DELETE"});
         httpBodyField = new JTextField(30);
         httpExpectedCodeField = new JTextField("200", 10);
 
-        // 端口探测组件
-        portHostField = new JTextField(20);
-        portField = new JTextField(5);
-
         // 卡片面板
         cardLayout = new CardLayout();
         cardsPanel = new JPanel(cardLayout);
 
         cardsPanel.add(createRemoteCommandPanel(), "REMOTE_COMMAND");
-        cardsPanel.add(createLocalScriptPanel(), "LOCAL_SCRIPT");
-        cardsPanel.add(createRemoteScriptPanel(), "REMOTE_SCRIPT");
         cardsPanel.add(createHttpRequestPanel(), "HTTP_REQUEST");
-        cardsPanel.add(createPortProbePanel(), "PORT_PROBE");
 
         if (existingItem != null) {
             nameField.setText(existingItem.getName());
@@ -143,31 +125,6 @@ public class CheckItemEditDialog extends DialogWrapper {
                 .getPanel();
     }
 
-    private JPanel createLocalScriptPanel() {
-        localScriptExpectedOutputField = new JTextField(30);
-        JLabel scriptTipLabel = new JLabel("<html><font color='#808080'>支持 .sh/.bash/.bat/.cmd/.ps1/.py，自动识别解释器</font></html>");
-        JLabel outputTipLabel = new JLabel("<html><font color='#808080'>不区分大小写，为空则不检查输出内容</font></html>");
-        return FormBuilder.createFormBuilder()
-                .addLabeledComponent("脚本路径", scriptPathField)
-                .addLabeledComponent("期望输出包含", localScriptExpectedOutputField)
-                .addComponent(scriptTipLabel)
-                .addComponent(outputTipLabel)
-                .getPanel();
-    }
-
-    private JPanel createRemoteScriptPanel() {
-        remoteScriptExpectedOutputField = new JTextField(30);
-        JLabel scriptTipLabel = new JLabel("<html><font color='#808080'>通过 bash 执行远程脚本</font></html>");
-        JLabel outputTipLabel = new JLabel("<html><font color='#808080'>不区分大小写，为空则不检查输出内容</font></html>");
-        return FormBuilder.createFormBuilder()
-                .addLabeledComponent("服务器", scriptServerComboBox)
-                .addLabeledComponent("远程脚本路径", scriptPathField)
-                .addLabeledComponent("期望输出包含", remoteScriptExpectedOutputField)
-                .addComponent(scriptTipLabel)
-                .addComponent(outputTipLabel)
-                .getPanel();
-    }
-
     private JPanel createHttpRequestPanel() {
         httpExpectedOutputField = new JTextField(30);
         JLabel outputTipLabel = new JLabel("<html><font color='#808080'>不区分大小写，为空则不检查响应内容</font></html>");
@@ -175,20 +132,9 @@ public class CheckItemEditDialog extends DialogWrapper {
                 .addLabeledComponent("URL", httpUrlField)
                 .addLabeledComponent("方法", httpMethodComboBox)
                 .addLabeledComponent("请求体 (POST)", httpBodyField)
-                .addLabeledComponent("期望状态码", httpExpectedCodeField)
+                .addLabeledComponent("期望状态码 *", httpExpectedCodeField)
                 .addLabeledComponent("期望输出包含", httpExpectedOutputField)
                 .addComponent(outputTipLabel)
-                .getPanel();
-    }
-
-    private JPanel createPortProbePanel() {
-        JPanel portPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 4, 0));
-        portPanel.add(portHostField);
-        portPanel.add(new JLabel(":"));
-        portPanel.add(portField);
-
-        return FormBuilder.createFormBuilder()
-                .addLabeledComponent("目标地址", portPanel)
                 .getPanel();
     }
 
@@ -208,25 +154,12 @@ public class CheckItemEditDialog extends DialogWrapper {
                 selectItemInComboBox(remoteServerComboBox, item.getServerId());
                 remoteCommandExpectedOutputField.setText(item.getExpectedOutput());
                 break;
-            case LOCAL_SCRIPT:
-                scriptPathField.setText(item.getScriptPath());
-                localScriptExpectedOutputField.setText(item.getExpectedOutput());
-                break;
-            case REMOTE_SCRIPT:
-                scriptPathField.setText(item.getScriptPath());
-                selectItemInComboBox(scriptServerComboBox, item.getServerId());
-                remoteScriptExpectedOutputField.setText(item.getExpectedOutput());
-                break;
             case HTTP_REQUEST:
                 httpUrlField.setText(item.getUrl());
                 httpMethodComboBox.setSelectedItem(item.getHttpMethod());
                 httpBodyField.setText(item.getHttpBody());
                 httpExpectedCodeField.setText(String.valueOf(item.getExpectedStatusCode()));
                 httpExpectedOutputField.setText(item.getExpectedOutput());
-                break;
-            case PORT_PROBE:
-                portHostField.setText(item.getHost());
-                portField.setText(String.valueOf(item.getPort()));
                 break;
         }
     }
@@ -294,54 +227,32 @@ public class CheckItemEditDialog extends DialogWrapper {
                 item.setServerId(extractIdFromComboBoxItem((String) remoteServerComboBox.getSelectedItem()));
                 item.setExpectedOutput(remoteCommandExpectedOutputField.getText());
                 break;
-            case LOCAL_SCRIPT:
-                String localScript = scriptPathField.getText().trim();
-                if (localScript.isEmpty()) {
-                    showError("请输入脚本路径");
-                    return null;
-                }
-                item.setScriptPath(localScript);
-                item.setExpectedOutput(localScriptExpectedOutputField.getText());
-                break;
-            case REMOTE_SCRIPT:
-                String remoteScript = scriptPathField.getText().trim();
-                if (remoteScript.isEmpty()) {
-                    showError("请输入远程脚本路径");
-                    return null;
-                }
-                item.setScriptPath(remoteScript);
-                item.setServerId(extractIdFromComboBoxItem((String) scriptServerComboBox.getSelectedItem()));
-                item.setExpectedOutput(remoteScriptExpectedOutputField.getText());
-                break;
             case HTTP_REQUEST:
                 String url = httpUrlField.getText().trim();
                 if (url.isEmpty()) {
                     showError("请输入 URL");
                     return null;
                 }
+                String statusCodeText = httpExpectedCodeField.getText().trim();
+                if (statusCodeText.isEmpty()) {
+                    showError("请输入期望状态码");
+                    return null;
+                }
+                try {
+                    int expectedCode = Integer.parseInt(statusCodeText);
+                    if (expectedCode < 100 || expectedCode > 599) {
+                        showError("状态码必须是 100-599 之间的有效 HTTP 状态码");
+                        return null;
+                    }
+                    item.setExpectedStatusCode(expectedCode);
+                } catch (NumberFormatException e) {
+                    showError("状态码必须是有效数字");
+                    return null;
+                }
                 item.setUrl(url);
                 item.setHttpMethod((String) httpMethodComboBox.getSelectedItem());
                 item.setHttpBody(httpBodyField.getText());
-                try {
-                    item.setExpectedStatusCode(Integer.parseInt(httpExpectedCodeField.getText().trim()));
-                } catch (NumberFormatException e) {
-                    item.setExpectedStatusCode(200);
-                }
                 item.setExpectedOutput(httpExpectedOutputField.getText());
-                break;
-            case PORT_PROBE:
-                String host = portHostField.getText().trim();
-                if (host.isEmpty()) {
-                    showError("请输入主机地址");
-                    return null;
-                }
-                item.setHost(host);
-                try {
-                    item.setPort(Integer.parseInt(portField.getText().trim()));
-                } catch (NumberFormatException e) {
-                    showError("端口号必须是数字");
-                    return null;
-                }
                 break;
         }
 

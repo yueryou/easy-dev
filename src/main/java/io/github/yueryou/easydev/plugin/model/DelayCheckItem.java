@@ -152,13 +152,8 @@ public class DelayCheckItem {
         switch (type) {
             case REMOTE_COMMAND:
                 return command != null && !command.isEmpty() ? command.substring(0, Math.min(30, command.length())) : "(空命令)";
-            case LOCAL_SCRIPT:
-            case REMOTE_SCRIPT:
-                return scriptPath != null ? scriptPath : "(未选择脚本)";
             case HTTP_REQUEST:
                 return url != null ? httpMethod + " " + url : "(未配置 URL)";
-            case PORT_PROBE:
-                return host + ":" + port;
             default:
                 return "(未知类型)";
         }
