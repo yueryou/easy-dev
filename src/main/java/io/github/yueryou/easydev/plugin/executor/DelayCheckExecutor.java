@@ -64,8 +64,9 @@ public class DelayCheckExecutor {
 
         while (Instant.now().isBefore(endTime)) {
             round++;
+            Instant roundStart = Instant.now();
             context.getLogConsumer().accept("");
-            context.getLogConsumer().accept("[延迟检查] 第 " + round + " 轮检测开始");
+            context.getLogConsumer().accept("[延迟检查] 第 " + round + " 轮检测开始（" + roundStart + "）");
 
             boolean allSuccess = true;
             for (DelayCheckItem item : items) {
@@ -86,17 +87,21 @@ public class DelayCheckExecutor {
             }
 
             if (allSuccess) {
+                Instant roundEnd = Instant.now();
                 context.getLogConsumer().accept("");
-                context.getLogConsumer().accept("[延迟检查] 所有检测项通过，第 " + round + " 轮完成");
+                context.getLogConsumer().accept("[延迟检查] 所有检测项通过，第 " + round + " 轮完成（耗时 " + Duration.between(roundStart, roundEnd).getSeconds() + "s）");
                 StepResult result = StepResult.success("延迟检查通过，共执行 " + round + " 轮", 0);
                 result.setDuration(Duration.between(startTime, Instant.now()));
                 return result;
             }
 
+            Instant roundEnd = Instant.now();
+            context.getLogConsumer().accept("[延迟检查] 第 " + round + " 轮完成（耗时 " + Duration.between(roundStart, roundEnd).getSeconds() + "s）");
+
             // 等待间隔时间
-            long remaining = Duration.between(Instant.now(), endTime).getSeconds();
-            if (remaining > 0) {
-                long sleepTime = Math.min(interval, remaining);
+            if (Instant.now().isBefore(endTime)) {
+                long remainingSecs = Duration.between(Instant.now(), endTime).getSeconds();
+                long sleepTime = Math.min(interval, Math.max(1, remainingSecs));
                 context.getLogConsumer().accept("[延迟检查] 等待 " + sleepTime + "s 后进行下一轮...");
                 try {
                     TimeUnit.SECONDS.sleep(sleepTime);
@@ -105,6 +110,8 @@ public class DelayCheckExecutor {
                     context.getLogConsumer().accept("[延迟检查] 被中断");
                     return StepResult.failure("延迟检查被中断");
                 }
+            } else {
+                break;
             }
         }
 

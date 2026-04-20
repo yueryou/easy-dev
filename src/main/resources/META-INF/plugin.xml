@@ -76,6 +76,14 @@
     ]]></description>
 
     <change-notes><![CDATA[
+    <h2>release 1.6.0</h2>
+    <ul>
+        <li>Support for OneKey feature, allowing authentication configuration reuse</li>
+        <li>Support for pipeline duplication feature</li>
+        <li>Fixed a bug where shortcuts became invalid after creating/closing an SSH terminal</li>
+        <li>Support for delayed periodic service status probing</li>
+    </ul>
+
     <h2>release 1.5.3</h2>
     <ul>
         <li>Supports double-click to run quick command</li>
