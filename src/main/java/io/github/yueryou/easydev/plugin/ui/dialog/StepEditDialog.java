@@ -495,12 +495,11 @@ public class StepEditDialog extends DialogWrapper {
                 return this;
             }
 
-            StringBuilder text = new StringBuilder();
-            text.append(index + 1).append(". ");
-            text.append(item.getType().getDisplayName()).append(": ");
-            text.append(item.getBriefDescription());
+            String text = (index + 1) + ". " +
+                    item.getType().getDisplayName() + ": " +
+                    item.getBriefDescription();
 
-            setText(text.toString());
+            setText(text);
 
             if (isSelected) {
                 setBackground(list.getSelectionBackground());

@@ -127,7 +127,7 @@ public class CheckItemEditDialog extends DialogWrapper {
 
     private JPanel createHttpRequestPanel() {
         httpExpectedOutputField = new JTextField(30);
-        JLabel outputTipLabel = new JLabel("<html><font color='#808080'>不区分大小写，为空则不检查响应内容</font></html>");
+        JLabel outputTipLabel = new JLabel("<html><font color='#808080'>不区分大小写，为空则不检查响应内容（HTTP 状态码始终强制校验）</font></html>");
         return FormBuilder.createFormBuilder()
                 .addLabeledComponent("URL", httpUrlField)
                 .addLabeledComponent("方法", httpMethodComboBox)

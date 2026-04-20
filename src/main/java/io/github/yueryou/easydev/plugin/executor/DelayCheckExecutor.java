@@ -349,6 +349,11 @@ public class DelayCheckExecutor {
             context.getLogConsumer().accept("    [耗时] " + duration + "ms");
 
             if (statusCode == expectedCode) {
+                if (item.getExpectedOutput() == null || item.getExpectedOutput().isEmpty()) {
+                    StepResult result = StepResult.success("HTTP " + statusCode + " - 未配置检测项，视为成功", 0);
+                    result.setDuration(Duration.ofMillis(duration));
+                    return result;
+                }
                 if (body.length() > 500) {
                     body = body.substring(0, 500) + "...";
                 }

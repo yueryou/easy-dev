@@ -93,6 +93,7 @@ public class PipelineStepWrapper {
             this.delayCheckDuration = checkStep.getDuration();
             this.delayCheckInterval = checkStep.getInterval();
             this.delayCheckItemsJson = serializeCheckItems(checkStep.getCheckItems());
+            LOG.info("[PipelineStepWrapper] Serialized DelayCheckStep items: count=" + checkStep.getCheckItems().size() + ", json=" + this.delayCheckItemsJson);
         }
     }
 
@@ -139,9 +140,10 @@ public class PipelineStepWrapper {
                 DelayCheckStep checkStep = new DelayCheckStep();
                 checkStep.setDuration(delayCheckDuration);
                 checkStep.setInterval(delayCheckInterval);
+                LOG.info("[PipelineStepWrapper] Deserializing DelayCheckStep: delayCheckItemsJson=" + delayCheckItemsJson);
                 checkStep.setCheckItems(deserializeCheckItems(delayCheckItemsJson));
                 step = checkStep;
-                LOG.info("[PipelineStepWrapper] toStep() created DelayCheckStep: " + checkStep.getName() + ", duration=" + checkStep.getDuration());
+                LOG.info("[PipelineStepWrapper] toStep() created DelayCheckStep: " + checkStep.getName() + ", duration=" + checkStep.getDuration() + ", items=" + checkStep.getCheckItems().size());
                 break;
             default:
                 LOG.info("[PipelineStepWrapper] toStep() returning NULL - unknown type");
@@ -204,7 +206,7 @@ public class PipelineStepWrapper {
     @Nullable
     private static DelayCheckItem deserializeItem(String data) {
         try {
-            String[] parts = data.split("::");
+            String[] parts = data.split("::", -1);
             if (parts.length < 13) {
                 return null;
             }
