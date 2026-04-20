@@ -1,22 +1,18 @@
 package tech.lin2j.idea.plugin.ui.component;
 
-import com.intellij.openapi.fileChooser.FileChooser;
-import com.intellij.openapi.fileChooser.FileChooserDescriptor;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.ui.ComboBox;
-import com.intellij.openapi.ui.TextFieldWithBrowseButton;
 import com.intellij.openapi.util.text.StringUtil;
-import com.intellij.openapi.vfs.LocalFileSystem;
-import com.intellij.openapi.vfs.VirtualFile;
 import com.intellij.ui.CollectionComboBoxModel;
-import com.intellij.ui.components.JBPasswordField;
-import com.intellij.ui.components.JBRadioButton;
+import com.intellij.ui.components.JBLabel;
 import com.intellij.ui.components.JBTextField;
-import com.intellij.util.SystemProperties;
 import com.intellij.util.ui.FormBuilder;
 import tech.lin2j.idea.plugin.enums.AuthType;
 import tech.lin2j.idea.plugin.model.ConfigHelper;
+import tech.lin2j.idea.plugin.model.CredentialTemplate;
+import tech.lin2j.idea.plugin.service.TemplateManager;
 import tech.lin2j.idea.plugin.ssh.SshServer;
+import tech.lin2j.idea.plugin.ui.dialog.CredentialTemplateEditDialog;
 import tech.lin2j.idea.plugin.uitl.MessagesBundle;
 
 import javax.swing.*;
@@ -39,18 +35,13 @@ public class HostBasicPanel {
 
     private JBTextField ipInput;
     private JBTextField portInput;
-    private JBTextField userInput;
     private JBTextField descInput;
-
-    private JBPasswordField passwdInput;
-    private TextFieldWithBrowseButton privateKeyInput;
-    private JBPasswordField passphraseInput;
+    private ComboBox<CredentialTemplate> oneKeyComboBox;
     private ComboBox<String> tagComboBox;
-
-    private JBRadioButton passwdRadio;
-    private JBRadioButton privateKeyRadio;
-    private JPanel authTypeContainer;
     private JPanel testConnectContainer;
+    private JPanel oneKeyPanel;
+    private JButton addOneKeyButton;
+    private JBLabel templateInfoLabel;
 
     private final SshServer contentProvider;
     private final Project project;
@@ -62,7 +53,8 @@ public class HostBasicPanel {
         this.testButton = testButton;
 
         initInput();
-        initAuthTypeContainer();
+        initOneKeyPanel();
+        initTemplateInfoLabel();
         initTagComboBox();
         initTestConnectContainer();
         setContent();
@@ -70,11 +62,8 @@ public class HostBasicPanel {
         root = FormBuilder.createFormBuilder()
                 .addLabeledComponent(MessagesBundle.getText("dialog.panel.host.basic.ip"), ipInput)
                 .addLabeledComponent(MessagesBundle.getText("dialog.panel.host.basic.port"), portInput)
-                .addLabeledComponent(MessagesBundle.getText("dialog.panel.host.basic.user"), userInput)
-                .addLabeledComponent(MessagesBundle.getText("dialog.panel.host.basic.auth-type"), authTypeContainer)
-                .addLabeledComponent(MessagesBundle.getText("dialog.panel.host.basic.password"), passwdInput)
-                .addLabeledComponent(MessagesBundle.getText("dialog.panel.host.basic.private-key"), privateKeyInput)
-                .addLabeledComponent(MessagesBundle.getText("dialog.panel.host.basic.pass-phrase"), passphraseInput)
+                .addLabeledComponent(MessagesBundle.getText("dialog.panel.host.basic.auth-type"), oneKeyPanel)
+                .addComponent(templateInfoLabel)
                 .addLabeledComponent(MessagesBundle.getText("dialog.panel.host.basic.tag"), tagComboBox)
                 .addLabeledComponent(MessagesBundle.getText("dialog.panel.host.basic.description"), descInput)
                 .addComponent(testConnectContainer)
@@ -90,52 +79,76 @@ public class HostBasicPanel {
      *
      * @return return false when required field is blank
      */
-    public boolean saveServerInfo(SshServer server, boolean test) {
-        return !setServerInfo(server, server.getId() == null, test);
+    public boolean saveServerInfo(SshServer server, boolean genId) {
+        return !setServerInfo(server, genId);
     }
 
     private void initInput() {
         ipInput = new JBTextField();
         portInput = new JBTextField();
-        userInput = new JBTextField();
         descInput = new JBTextField();
-        passwdInput = new JBPasswordField();
-
-        privateKeyInput = new TextFieldWithBrowseButton();
-        privateKeyInput.addActionListener(e -> {
-            FileChooserDescriptor descriptor = allButNoMultipleChoose();
-            VirtualFile virtualFile = FileChooser.chooseFile(descriptor, privateKeyInput, project, getSshDir());
-            if (virtualFile != null) {
-                privateKeyInput.setText(virtualFile.getPath());
-            }
-        });
-        passphraseInput = new JBPasswordField();
     }
 
-    private void initAuthTypeContainer() {
-        authTypeContainer = new JPanel();
-        authTypeContainer.setLayout(new GridLayout(1, 2));
+    private void initOneKeyPanel() {
+        oneKeyComboBox = new ComboBox<>();
+        List<CredentialTemplate> templates = new ArrayList<>();
+        templates.add(null);
+        templates.addAll(TemplateManager.getInstance().getAllTemplates());
+        oneKeyComboBox.setModel(new CollectionComboBoxModel<>(templates));
 
-        passwdRadio = new JBRadioButton(MessagesBundle.getText("dialog.panel.host.basic.auth-type.password"));
-        privateKeyRadio = new JBRadioButton(MessagesBundle.getText("dialog.panel.host.basic.auth-type.private"));
-        ButtonGroup group = new ButtonGroup();
-        group.add(passwdRadio);
-        group.add(privateKeyRadio);
-
-        passwdRadio.addActionListener(e -> {
-            passwdInput.setEnabled(true);
-            privateKeyInput.setEnabled(false);
-            passphraseInput.setEnabled(false);
+        oneKeyComboBox.setRenderer(new DefaultListCellRenderer() {
+            @Override
+            public Component getListCellRendererComponent(JList<?> list, Object value, int index, boolean isSelected, boolean cellHasFocus) {
+                super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
+                if (value == null) {
+                    setText("<None>");
+                } else {
+                    setText(((CredentialTemplate) value).getName());
+                }
+                return this;
+            }
         });
 
-        privateKeyRadio.addActionListener(e -> {
-            passwdInput.setEnabled(false);
-            privateKeyInput.setEnabled(true);
-            passphraseInput.setEnabled(true);
+        addOneKeyButton = new JButton("+");
+        addOneKeyButton.addActionListener(e -> {
+            CredentialTemplateEditDialog dialog = new CredentialTemplateEditDialog(project, null);
+            dialog.show();
+            if (dialog.isOK() && dialog.getTemplate() != null) {
+                List<CredentialTemplate> items = new ArrayList<>();
+                items.add(null);
+                items.addAll(TemplateManager.getInstance().getAllTemplates());
+                oneKeyComboBox.setModel(new CollectionComboBoxModel<>(items));
+                oneKeyComboBox.setSelectedItem(dialog.getTemplate());
+            }
         });
 
-        authTypeContainer.add(passwdRadio);
-        authTypeContainer.add(privateKeyRadio);
+        oneKeyComboBox.addActionListener(e -> onOneKeyTemplateSelected());
+
+        oneKeyPanel = new JPanel(new BorderLayout());
+        oneKeyPanel.add(oneKeyComboBox, BorderLayout.CENTER);
+        oneKeyPanel.add(addOneKeyButton, BorderLayout.EAST);
+    }
+
+    private void initTemplateInfoLabel() {
+        templateInfoLabel = new JBLabel("");
+        templateInfoLabel.setBorder(BorderFactory.createEmptyBorder(4, 25, 4, 0));
+    }
+
+    private void onOneKeyTemplateSelected() {
+        CredentialTemplate selected = (CredentialTemplate) oneKeyComboBox.getSelectedItem();
+        if (selected != null) {
+            String authDesc = "";
+            if (selected.getAuthType() != null) {
+                if (AuthType.needPassword(selected.getAuthType())) {
+                    authDesc = MessagesBundle.getText("dialog.panel.host.basic.auth-type.password");
+                } else {
+                    authDesc = MessagesBundle.getText("dialog.panel.host.basic.auth-type.private");
+                }
+            }
+            templateInfoLabel.setText("User: " + selected.getUsername() + " | Auth: " + authDesc);
+        } else {
+            templateInfoLabel.setText("");
+        }
     }
 
     private void initTagComboBox() {
@@ -152,47 +165,34 @@ public class HostBasicPanel {
     }
 
     private void setContent() {
-        // default
-        passwdRadio.setSelected(true);
-        passwdRadio.doClick();
         if (contentProvider != null) {
-            // Support multiple IPs separated by comma
             String ipText = contentProvider.getIpList().stream()
                     .reduce((a, b) -> a + ", " + b)
                     .orElse("");
             ipInput.setText(ipText);
             portInput.setText(contentProvider.getPort().toString());
-            userInput.setText(contentProvider.getUsername());
-            passwdInput.setText(contentProvider.getPassword());
             tagComboBox.setSelectedItem(contentProvider.getTag());
             descInput.setText(contentProvider.getDescription());
-            privateKeyInput.setText(contentProvider.getPemPrivateKey());
-            passphraseInput.setText(contentProvider.getPassPhrase());
-            if (AuthType.needPassword(contentProvider.getAuthType())) {
-                passwdRadio.setSelected(true);
-                passwdRadio.doClick();
-            } else {
-                privateKeyRadio.setSelected(true);
-                privateKeyRadio.doClick();
+
+            // Restore template selection
+            if (contentProvider.getTemplateId() != null && !contentProvider.getTemplateId().isEmpty()) {
+                List<CredentialTemplate> templates = TemplateManager.getInstance().getAllTemplates();
+                for (CredentialTemplate t : templates) {
+                    if (t.getUid().equals(contentProvider.getTemplateId())) {
+                        oneKeyComboBox.setSelectedItem(t);
+                        break;
+                    }
+                }
             }
         }
-    }
-
-    private VirtualFile getSshDir() {
-        String dir = SystemProperties.getUserHome() + "/.ssh";
-        return LocalFileSystem.getInstance().findFileByPath(dir);
-    }
-
-    private FileChooserDescriptor allButNoMultipleChoose() {
-        return new FileChooserDescriptor(true, true, true, true, true, false);
     }
 
     /**
      * return true if parameter required is missing
      */
-    private boolean setServerInfo(SshServer server, boolean needId, boolean test) {
+    private boolean setServerInfo(SshServer server, boolean genId) {
         boolean miss = false;
-        if (needId) {
+        if (genId) {
             server.setId(ConfigHelper.maxSshServerId() + 1);
             server.setUid(UUID.randomUUID().toString());
         }
@@ -213,25 +213,26 @@ public class HostBasicPanel {
         if (setText(portInput, true, port -> server.setPort(Integer.parseInt(port)))) {
             return true;
         }
-        if (setText(userInput, true, server::setUsername)) {
+
+        // Require a template to be selected
+        CredentialTemplate selected = (CredentialTemplate) oneKeyComboBox.getSelectedItem();
+        if (selected == null) {
             return true;
         }
-        if (passwdRadio.isSelected()) {
-            if (setText(passwdInput, test, server::setPassword)) {
-                return true;
-            }
+
+        server.setTemplateId(selected.getUid());
+        server.setUseTemplateCredentials(true);
+        server.setUsername(selected.getUsername());
+
+        if (AuthType.needPassword(selected.getAuthType())) {
             server.setAuthType(AuthType.PASSWORD.getCode());
             server.setPemPrivateKey(null);
             server.setPassPhrase(null);
-        }
-        if (privateKeyRadio.isSelected()) {
-            if (setText(privateKeyInput.getTextField(), true, server::setPemPrivateKey)) {
-                return true;
-            }
-            setText(passphraseInput, false, server::setPassPhrase);
+        } else {
             server.setAuthType(AuthType.PEM_PRIVATE_KEY.getCode());
             server.setPassword(null);
         }
+
         setText(descInput, false, server::setDescription);
         server.setTag(Objects.toString(tagComboBox.getSelectedItem()));
         return miss;

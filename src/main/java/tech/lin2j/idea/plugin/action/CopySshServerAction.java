@@ -5,7 +5,7 @@ import com.intellij.openapi.project.Project;
 import com.intellij.openapi.ui.Messages;
 import com.intellij.openapi.util.text.StringUtil;
 import icons.MyIcons;
-import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import tech.lin2j.idea.plugin.event.ApplicationContext;
 import tech.lin2j.idea.plugin.model.ConfigHelper;
 import tech.lin2j.idea.plugin.model.event.TableRefreshEvent;
@@ -33,7 +33,7 @@ public class CopySshServerAction extends NewUpdateThreadAction {
     }
 
     @Override
-    public void actionPerformed(@NotNull AnActionEvent e) {
+    public void actionPerformed(@Nullable AnActionEvent e) {
         SshServer source = provider.get();
         if (source == null) return;
 

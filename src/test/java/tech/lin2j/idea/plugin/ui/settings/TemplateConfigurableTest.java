@@ -27,7 +27,7 @@ public class TemplateConfigurableTest {
     @Test
     public void getDisplayName_shouldReturnCorrectText() {
         TemplateConfigurable configurable = new TemplateConfigurable();
-        assertEquals("SSH 密钥模板", configurable.getDisplayName());
+        assertEquals("OneKey 配置", configurable.getDisplayName());
     }
 
     // ============================================================

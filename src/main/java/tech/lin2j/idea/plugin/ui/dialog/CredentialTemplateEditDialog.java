@@ -20,6 +20,8 @@ import tech.lin2j.idea.plugin.uitl.MessagesBundle;
 import javax.swing.*;
 import javax.swing.border.TitledBorder;
 import java.awt.*;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.UUID;
@@ -144,13 +146,40 @@ public class CredentialTemplateEditDialog extends DialogWrapper {
                         GridConstraints.SIZEPOLICY_FIXED, null, null, null));
         row++;
 
-        // Password field
+        // Password field with eye toggle
         root.add(new JBLabel(MessagesBundle.getText("dialog.credential-template.password")),
                 new GridConstraints(row, 0, 1, 1, GridConstraints.ANCHOR_WEST,
                         GridConstraints.FILL_NONE, GridConstraints.SIZEPOLICY_FIXED,
                         GridConstraints.SIZEPOLICY_FIXED, null, null, null));
+        JPanel passwordPanel = new JPanel(new BorderLayout(0, 0));
         passwordField = new JPasswordField();
-        root.add(passwordField,
+        if (!isNewMode && templateToEdit != null) {
+            String savedPassword = TemplateManager.getTemplatePassword(templateToEdit.getUid());
+            if (savedPassword != null) {
+                passwordField.setText(savedPassword);
+            }
+        }
+        passwordPanel.add(passwordField, BorderLayout.CENTER);
+
+        JLabel eyeLabel = new JLabel("\uD83D\uDC41", SwingConstants.CENTER);
+        eyeLabel.setPreferredSize(new Dimension(30, passwordField.getPreferredSize().height));
+        eyeLabel.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        char echoChar = passwordField.getEchoChar();
+        eyeLabel.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mousePressed(MouseEvent e) {
+                passwordField.setEchoChar((char) 0);
+            }
+
+            @Override
+            public void mouseReleased(MouseEvent e) {
+                passwordField.setEchoChar(echoChar);
+            }
+        });
+        passwordPanel.add(eyeLabel, BorderLayout.EAST);
+        passwordPanel.setBorder(BorderFactory.createLineBorder(new JBTextField().getBackground().darker()));
+
+        root.add(passwordPanel,
                 new GridConstraints(row, 1, 1, 1, GridConstraints.ANCHOR_WEST,
                         GridConstraints.FILL_HORIZONTAL, GridConstraints.SIZEPOLICY_WANT_GROW,
                         GridConstraints.SIZEPOLICY_FIXED, null, new Dimension(300, -1), null));

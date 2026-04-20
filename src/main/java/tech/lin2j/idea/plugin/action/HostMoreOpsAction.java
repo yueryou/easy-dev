@@ -54,16 +54,6 @@ public class HostMoreOpsAction implements ActionListener {
             }
         }));
 
-        // Copy Server
-        String copyText = MessagesBundle.getText("action.copy-server.prompt.title");
-        menu.add(new JMenuItem(new AbstractAction(copyText) {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                SshServer server = ConfigHelper.getSshServerById(sshId);
-                new CopySshServerAction(project, server).actionPerformed(null);
-            }
-        }));
-
         // Separator
         menu.addSeparator();
 

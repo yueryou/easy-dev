@@ -3,7 +3,7 @@ package tech.lin2j.idea.plugin.action;
 import com.intellij.openapi.actionSystem.AnActionEvent;
 import com.intellij.openapi.project.Project;
 import icons.MyIcons;
-import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import tech.lin2j.idea.plugin.ssh.SshServer;
 import tech.lin2j.idea.plugin.ui.dialog.HostSettingsDialog;
 import tech.lin2j.idea.plugin.uitl.MessagesBundle;
@@ -28,7 +28,7 @@ public class CreateNewConnectionFromServerAction extends NewUpdateThreadAction {
     }
 
     @Override
-    public void actionPerformed(@NotNull AnActionEvent e) {
+    public void actionPerformed(@Nullable AnActionEvent e) {
         SshServer source = provider.get();
         if (source == null) return;
 

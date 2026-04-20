@@ -12,7 +12,6 @@ import tech.lin2j.idea.plugin.ssh.SshServer;
 import tech.lin2j.idea.plugin.ui.component.HostBasicPanel;
 import tech.lin2j.idea.plugin.ui.component.HostOtherPanel;
 import tech.lin2j.idea.plugin.ui.component.HostProxyPanel;
-import tech.lin2j.idea.plugin.ui.component.HostTemplatePanel;
 import tech.lin2j.idea.plugin.uitl.MessagesBundle;
 
 import javax.swing.JButton;
@@ -27,8 +26,6 @@ public class HostSettingsDialog extends DialogWrapper {
     private final HostBasicPanel hostBasicPanel;
     private final HostProxyPanel hostProxyPanel;
     private final HostOtherPanel hostOtherPanel;
-    private final HostTemplatePanel hostTemplatePanel;
-
     private SshServer server;
 
     public HostSettingsDialog(Project project, SshServer server) {
@@ -42,7 +39,6 @@ public class HostSettingsDialog extends DialogWrapper {
         hostBasicPanel = new HostBasicPanel(project, server, testButton);
         hostProxyPanel = new HostProxyPanel(project, server);
         hostOtherPanel = new HostOtherPanel(server);
-        hostTemplatePanel = new HostTemplatePanel(project, server);
 
         setTitle(MessagesBundle.getText("dialog.host.title"));
         setSize(500, 0);
@@ -51,19 +47,17 @@ public class HostSettingsDialog extends DialogWrapper {
 
     @Override
     protected void doOKAction() {
-        boolean isAdd = false;
+        boolean isAdd = server == null || server.getUid() == null;
         if (server == null) {
             server = new SshServer();
-            isAdd = true;
         }
-        boolean isOk = hostBasicPanel.saveServerInfo(server, false);
+        boolean isOk = hostBasicPanel.saveServerInfo(server, true);
         if (!isOk) {
             return;
         }
 
         hostProxyPanel.setProxySettings(server);
         hostOtherPanel.setOtherSettings(server);
-        hostTemplatePanel.setTemplateSettings(server);
 
         if (isAdd) {
             ConfigHelper.addSshServer(server);
@@ -75,18 +69,14 @@ public class HostSettingsDialog extends DialogWrapper {
     }
 
     private void testConnect(ActionEvent e) {
-        SshServer test = server;
-        if (test == null) {
-            test = new SshServer();
-        }
-        boolean isOk = hostBasicPanel.saveServerInfo(test, true);
+        SshServer test = new SshServer();
+        boolean isOk = hostBasicPanel.saveServerInfo(test, false);
         if (!isOk) {
             return;
         }
 
         hostProxyPanel.setProxySettings(test);
         hostOtherPanel.setOtherSettings(test);
-        hostTemplatePanel.setTemplateSettings(test);
 
         new TestConnectionAction(project, test).actionPerformed(e);
     }
@@ -97,13 +87,11 @@ public class HostSettingsDialog extends DialogWrapper {
         String basicTab = MessagesBundle.getText("dialog.host.tab.basic");
         String proxyTab = MessagesBundle.getText("dialog.host.tab.proxy");
         String otherTab = MessagesBundle.getText("dialog.host.tab.other");
-        String templateTab = MessagesBundle.getText("dialog.host.tab.template");
 
         JBTabbedPane tabs = new JBTabbedPane();
         tabs.addTab(basicTab, hostBasicPanel.createUI());
         tabs.addTab(proxyTab, hostProxyPanel.createUI());
         tabs.addTab(otherTab, hostOtherPanel.createUI());
-        tabs.addTab(templateTab, hostTemplatePanel.createUI());
 
         root.add(tabs);
 

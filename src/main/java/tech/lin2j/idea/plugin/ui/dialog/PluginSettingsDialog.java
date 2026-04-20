@@ -9,6 +9,7 @@ import tech.lin2j.idea.plugin.ui.settings.GeneralConfigurable;
 import tech.lin2j.idea.plugin.ui.settings.LogLevelConfigurable;
 import tech.lin2j.idea.plugin.ui.settings.SFTPConfigurable;
 import tech.lin2j.idea.plugin.ui.settings.ServerTagConfigurable;
+import tech.lin2j.idea.plugin.ui.settings.TemplateConfigurable;
 
 import java.util.Collections;
 
@@ -22,7 +23,8 @@ public class PluginSettingsDialog {
                 new GeneralConfigurable(),
                 new ServerTagConfigurable(),
                 new SFTPConfigurable(),
-                new LogLevelConfigurable()
+                new LogLevelConfigurable(),
+                new TemplateConfigurable()
         };
     }
 

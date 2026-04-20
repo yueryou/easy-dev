@@ -21,7 +21,7 @@ public class TemplateConfigurable implements Configurable {
 
     @Override
     public @Nls(capitalization = Nls.Capitalization.Title) String getDisplayName() {
-        return "SSH 密钥模板";
+        return "OneKey 配置";
     }
 
     @Override

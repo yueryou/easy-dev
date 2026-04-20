@@ -4,6 +4,7 @@ import tech.lin2j.idea.plugin.enums.AuthType;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.UUID;
 
 public class CredentialTemplate implements UniqueModel {
 
@@ -72,11 +73,19 @@ public class CredentialTemplate implements UniqueModel {
 
     @Override
     public String getUid() {
+        if (uid == null || uid.isEmpty()) {
+            uid = UUID.randomUUID().toString();
+        }
         return uid;
     }
 
     @Override
     public void setUid(String uid) {
         this.uid = uid;
+    }
+
+    @Override
+    public String toString() {
+        return name;
     }
 }
