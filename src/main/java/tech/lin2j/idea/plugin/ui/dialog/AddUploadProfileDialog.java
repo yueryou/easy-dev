@@ -208,9 +208,9 @@ public class AddUploadProfileDialog extends DialogWrapper {
 
         preCommandBoxContainer = new JPanel(new GridBagLayout());
         preCommandBoxContainer.add(preCommandBox, new GridBagConstraints(0, 0, 1, 1, 1, 0, GridBagConstraints.BASELINE_LEADING, GridBagConstraints.HORIZONTAL,
-                JBUI.emptyInsets(), 0, 0));
+                JBUI.insets(3, 0, 3, 0), 0, 0));
         preCommandBoxContainer.add(preToolbar.getComponent(), new GridBagConstraints(1, 0, 1, 1, 0, 0, GridBagConstraints.BASELINE_LEADING, GridBagConstraints.HORIZONTAL,
-                JBUI.emptyInsets(), 0, 0));
+                JBUI.insets(3, 0, 3, 0), 0, 0));
 
         // Add command button for post-upload
         DefaultActionGroup postGroup = new DefaultActionGroup();
@@ -221,9 +221,9 @@ public class AddUploadProfileDialog extends DialogWrapper {
 
         postCommandBoxContainer = new JPanel(new GridBagLayout());
         postCommandBoxContainer.add(postCommandBox, new GridBagConstraints(0, 0, 1, 1, 1, 0, GridBagConstraints.BASELINE_LEADING, GridBagConstraints.HORIZONTAL,
-                JBUI.emptyInsets(), 0, 0));
+                JBUI.insets(3, 0, 3, 0), 0, 0));
         postCommandBoxContainer.add(postToolbar.getComponent(), new GridBagConstraints(1, 0, 1, 1, 0, 0, GridBagConstraints.BASELINE_LEADING, GridBagConstraints.HORIZONTAL,
-                JBUI.emptyInsets(), 0, 0));
+                JBUI.insets(3, 0, 3, 0), 0, 0));
 
         // Add listener for useUploadPathCheckBox to update command preview
         useUploadPathCheckBox.addActionListener(e -> updateCommandPreview());

@@ -325,6 +325,13 @@
                 description="Quick command tool">
             <add-to-group group-id="TerminalToolwindowActionGroup" anchor="first"/>
         </action>
+        <action id="EasyDeploy.UploadToProjectFile"
+                class="tech.lin2j.idea.plugin.action.ftp.UploadToProjectFileAction"
+                icon="AllIcons.Actions.Upload"
+                text="Upload to...">
+            <add-to-group group-id="ProjectViewPopupMenu" anchor="after" relative-to-action="CopyReference"/>
+            <add-to-group group-id="EditorPopupMenu" anchor="after" relative-to-action="$Paste"/>
+        </action>
     </actions>
 
     <extensions defaultExtensionNs="com.intellij">
