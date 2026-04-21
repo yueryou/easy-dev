@@ -29,6 +29,14 @@ public class CreateNewConnectionFromServerAction extends NewUpdateThreadAction {
 
     @Override
     public void actionPerformed(@Nullable AnActionEvent e) {
+        createNewConnection();
+    }
+
+    /**
+     * Creates a new connection by cloning the source server configuration.
+     * This method can be called directly without going through the action system.
+     */
+    public void createNewConnection() {
         SshServer source = provider.get();
         if (source == null) return;
 

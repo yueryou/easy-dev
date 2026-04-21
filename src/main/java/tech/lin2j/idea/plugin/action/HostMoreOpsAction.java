@@ -50,7 +50,7 @@ public class HostMoreOpsAction implements ActionListener {
             @Override
             public void actionPerformed(ActionEvent e) {
                 SshServer server = ConfigHelper.getSshServerById(sshId);
-                new CreateNewConnectionFromServerAction(project, server).actionPerformed(null);
+                new CreateNewConnectionFromServerAction(project, server).createNewConnection();
             }
         }));
 

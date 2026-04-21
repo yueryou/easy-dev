@@ -78,7 +78,7 @@ public class HostSettingsDialog extends DialogWrapper {
         hostProxyPanel.setProxySettings(test);
         hostOtherPanel.setOtherSettings(test);
 
-        new TestConnectionAction(project, test).actionPerformed(e);
+        new TestConnectionAction(project, test).testConnection();
     }
 
     @Nullable

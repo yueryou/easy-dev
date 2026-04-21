@@ -35,11 +35,6 @@ public class ShowHiddenFileAndDirAction extends ToggleAction {
     }
 
     @Override
-    public void update(@NotNull AnActionEvent e) {
-        super.update(e);
-    }
-
-    @Override
     public @NotNull ActionUpdateThread getActionUpdateThread() {
         return ActionUpdateThread.BGT;
     }

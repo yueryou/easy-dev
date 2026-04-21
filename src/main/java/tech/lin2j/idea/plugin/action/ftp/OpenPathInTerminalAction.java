@@ -37,6 +37,6 @@ public class OpenPathInTerminalAction extends NewUpdateThreadAction {
         Integer sshId = tableContainer.getSshId();
         Project project = tableContainer.getProject();
 
-        new OpenTerminalAction(sshId, project, workingDirectory).actionPerformed(null);
+        new OpenTerminalAction(sshId, project, workingDirectory).openTerminal();
     }
 }

@@ -37,6 +37,14 @@ public class TestConnectionAction implements ActionListener {
 
     @Override
     public void actionPerformed(ActionEvent e) {
+        testConnection();
+    }
+
+    /**
+     * Tests the SSH connection to the configured server.
+     * This method can be called directly without going through the action system.
+     */
+    public void testConnection() {
         String testTitle = MessagesBundle.getText("dialog.panel.host.test-connect.testing");
         ProgressManager.getInstance().run(new Task.Backgroundable(project, testTitle) {
             @Override

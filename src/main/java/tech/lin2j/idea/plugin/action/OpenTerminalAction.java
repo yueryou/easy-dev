@@ -43,6 +43,14 @@ public class OpenTerminalAction implements ActionListener {
 
     @Override
     public void actionPerformed(ActionEvent e) {
+        openTerminal();
+    }
+
+    /**
+     * Opens a terminal for the configured SSH server.
+     * This method can be called directly without going through the action system.
+     */
+    public void openTerminal() {
         SshServer tmp = ConfigHelper.getSshServerById(sshId);
         // 获取 IP 列表，支持多 IP 配置
         List<String> ipList = tmp.getIpList();
@@ -51,7 +59,7 @@ public class OpenTerminalAction implements ActionListener {
             return;
         }
 
-        // 当有多个 IP 时，让用户选择连接方式
+        // 当有多个 IP 时，弹出对话框让用户选择
         if (ipList.size() == 1) {
             // 单个 IP，直接打开终端
             openTerminalForIp(ipList.get(0), tmp, project, workingDirectory);
