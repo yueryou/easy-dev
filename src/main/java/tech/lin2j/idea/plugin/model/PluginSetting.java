@@ -48,7 +48,7 @@ public class PluginSetting {
     private int logRetentionDays = 30;
 
     // Unified Logger Settings
-    private String unifiedLogLevel = "INFO";
+    private String unifiedLogLevel = "OFF";
 
     // SFTP/SCP
     private boolean preferSftpOverScp = true;
@@ -226,7 +226,7 @@ public class PluginSetting {
     }
 
     public String getUnifiedLogLevel() {
-        return unifiedLogLevel != null ? unifiedLogLevel : "INFO";
+        return unifiedLogLevel != null ? unifiedLogLevel : "OFF";
     }
 
     public void setUnifiedLogLevel(String unifiedLogLevel) {
