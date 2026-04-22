@@ -76,6 +76,12 @@
     ]]></description>
 
     <change-notes><![CDATA[
+    <h2>release 1.6.1</h2>
+    <ul>
+        <li>FixBug import/export features bug</li>
+        <li>
+Refactoring optimization: Achieved complete decoupling of the Server, Shortcuts, and Upload Configuration modules, ensuring they are independent and free of dependencies.</li>
+    </ul>
     <h2>release 1.6.0</h2>
     <ul>
         <li>Support for OneKey feature, allowing authentication configuration reuse</li>
