@@ -15,6 +15,7 @@
 *.project
 .flattened-pom.xml
 .gradle
+.worktrees/
 build
 .intellijPlatform/*.worktrees/
 .intellijPlatform
