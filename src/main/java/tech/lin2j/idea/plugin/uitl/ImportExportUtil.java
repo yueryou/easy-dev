@@ -189,16 +189,16 @@ public class ImportExportUtil {
         Map<String, String> templateIdMap = new HashMap<>();
         if (options.isCredentialTemplate() && CollectionUtils.isNotEmpty(newConfig.getCredentialTemplates())) {
             for (CredentialTemplate newTemplate : newConfig.getCredentialTemplates()) {
+                // Ensure UID is set before duplicate check to avoid null-key map issues
+                if (newTemplate.getUid() == null || newTemplate.getUid().isEmpty()) {
+                    newTemplate.setUid(UUID.randomUUID().toString());
+                }
                 String oldUid = newTemplate.getUid();
                 // Check if a template with this UID already exists, skip duplicate
-                CredentialTemplate existing = ConfigHelper.findTemplateById(newTemplate.getUid());
+                CredentialTemplate existing = ConfigHelper.findTemplateById(oldUid);
                 if (existing != null) {
                     templateIdMap.put(oldUid, existing.getUid());
                     continue;
-                }
-                // Ensure UID is set, add template
-                if (newTemplate.getUid() == null) {
-                    newTemplate.setUid(UUID.randomUUID().toString());
                 }
                 ConfigHelper.addCredentialTemplate(newTemplate);
                 templateIdMap.put(oldUid, newTemplate.getUid());
