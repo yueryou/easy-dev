@@ -13,7 +13,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
-import java.util.UUID;
 
 /**
  * @author linjinjia
@@ -35,7 +34,13 @@ public class SshServer implements Cloneable, UniqueModel {
 
     private String username;
 
+    /**
+     * @deprecated Passwords are now managed via the IntelliJ credential store
+     *     and template system. This field is retained only for backward-compatible
+     *     deserialization and should not be accessed directly.
+     */
     @Deprecated
+    @Transient
     private String password;
 
     private String tag;
@@ -146,8 +151,6 @@ public class SshServer implements Cloneable, UniqueModel {
 
     public void setUsername(String username) {
         this.username = username;
-        // forget history password in plugin configuration file
-        this.password = "";
     }
 
     @Override
@@ -179,10 +182,33 @@ public class SshServer implements Cloneable, UniqueModel {
         this.pemPrivateKey = pemPrivateKey;
     }
 
-    public String getTemplateId() { return templateId; }
-    public void setTemplateId(String templateId) { this.templateId = templateId; }
-    public boolean isUseTemplateCredentials() { return useTemplateCredentials; }
-    public void setUseTemplateCredentials(boolean useTemplateCredentials) { this.useTemplateCredentials = useTemplateCredentials; }
+    /**
+     * Returns the UID of the credential template associated with this server.
+     */
+    public String getTemplateId() {
+        return templateId;
+    }
+
+    /**
+     * Sets the UID of the credential template to use for this server.
+     */
+    public void setTemplateId(String templateId) {
+        this.templateId = templateId;
+    }
+
+    /**
+     * Returns whether template credentials are enabled for this server.
+     */
+    public boolean isUseTemplateCredentials() {
+        return useTemplateCredentials;
+    }
+
+    /**
+     * Sets whether template credentials should be used for this server.
+     */
+    public void setUseTemplateCredentials(boolean useTemplateCredentials) {
+        this.useTemplateCredentials = useTemplateCredentials;
+    }
 
     @Transient
     public String getPassPhrase() {
@@ -216,7 +242,10 @@ public class SshServer implements Cloneable, UniqueModel {
     public SshServer clone() {
         try {
             SshServer clone = (SshServer) super.clone();
-            // TODO: copy mutable state here, so the clone can't change the internals of the original
+            // Deep copy mutable state so the clone cannot affect the original
+            if (this.ips != null) {
+                clone.ips = new ArrayList<>(this.ips);
+            }
             return clone;
         } catch (CloneNotSupportedException e) {
             throw new AssertionError();

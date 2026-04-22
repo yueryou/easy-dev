@@ -6,6 +6,19 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
+/**
+ * Represents a reusable credential template that can be associated with SSH servers.
+ * Templates encapsulate authentication information (username, auth type, encrypted
+ * credentials) so that multiple servers can share common credentials without
+ * duplicating sensitive data.
+ *
+ * <p>UIDs are auto-generated via {@link #ensureUid()} when templates are persisted
+ * through {@code ConfigPersistence.checkUid()}, so callers should not rely on
+ * {@link #getUid()} to produce a value before persistence.
+ *
+ * @author linjinjia
+ * @see tech.lin2j.idea.plugin.service.TemplateManager
+ */
 public class CredentialTemplate implements UniqueModel {
 
     private String uid;
@@ -73,10 +86,22 @@ public class CredentialTemplate implements UniqueModel {
 
     @Override
     public String getUid() {
+        return uid;
+    }
+
+    /**
+     * Ensures that this template has a non-null, non-empty UID.
+     * If the UID is currently {@code null} or empty, a random UUID
+     * is generated and assigned.
+     *
+     * <p>Call this method before persisting the template if you need
+     * a guaranteed UID. In practice, {@code ConfigPersistence.checkUid()}
+     * handles this automatically during serialization.
+     */
+    public void ensureUid() {
         if (uid == null || uid.isEmpty()) {
             uid = UUID.randomUUID().toString();
         }
-        return uid;
     }
 
     @Override

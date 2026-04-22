@@ -20,11 +20,34 @@ public class CredentialTemplateTest {
     }
 
     @Test
-    public void should_generate_unique_uid_when_none_provided() {
+    public void should_generate_unique_uid_when_ensure_uid_called() {
         CredentialTemplate template = new CredentialTemplate();
+        assertNull(template.getUid());
+
+        template.ensureUid();
         String uid = template.getUid();
 
         assertNotNull(uid);
         assertFalse(uid.isEmpty());
+    }
+
+    @Test
+    public void should_not_overwrite_existing_uid_when_ensure_uid_called() {
+        CredentialTemplate template = new CredentialTemplate();
+        template.setUid("existing-uid");
+
+        template.ensureUid();
+
+        assertEquals("existing-uid", template.getUid());
+    }
+
+    @Test
+    public void get_uid_should_not_have_side_effects() {
+        CredentialTemplate template = new CredentialTemplate();
+        assertNull(template.getUid());
+
+        // Calling getUid() multiple times should still return null
+        assertNull(template.getUid());
+        assertNull(template.getUid());
     }
 }

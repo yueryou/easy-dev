@@ -4,6 +4,7 @@ import com.intellij.openapi.project.Project;
 import com.intellij.ui.components.JBCheckBox;
 import com.intellij.ui.components.JBLabel;
 import com.intellij.util.ui.JBUI;
+import org.jetbrains.annotations.Nullable;
 import tech.lin2j.idea.plugin.model.ConfigHelper;
 import tech.lin2j.idea.plugin.model.PluginSetting;
 import tech.lin2j.idea.plugin.service.TemplateManager;
@@ -14,7 +15,6 @@ import javax.swing.JButton;
 import javax.swing.JPanel;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
-import java.awt.Insets;
 
 /**
  * Settings panel for credential template configuration.
@@ -26,7 +26,6 @@ import java.awt.Insets;
  */
 public class TemplateSettingsPanel {
 
-    private final Project project;
     private final PluginSetting setting;
 
     private JPanel mainPanel;
@@ -35,20 +34,15 @@ public class TemplateSettingsPanel {
     private JBCheckBox autoValidateCheckBox;
     private JButton manageButton;
 
-    // Store initial values for isModified() check
-    private boolean initialAutoSave;
-    private boolean initialAutoValidate;
-
-    public TemplateSettingsPanel(Project project) {
-        this.project = project;
+    public TemplateSettingsPanel(@Nullable Project project) {
         this.setting = ConfigHelper.pluginSetting();
-        initPanel();
+        initPanel(project);
     }
 
     /**
      * Initialize the main panel with all components.
      */
-    private void initPanel() {
+    private void initPanel(@Nullable Project project) {
         mainPanel = new JPanel(new GridBagLayout());
         mainPanel.setBorder(JBUI.Borders.empty(8));
 
@@ -61,29 +55,30 @@ public class TemplateSettingsPanel {
         // Stats label
         gbc.gridy = 0;
         gbc.weightx = 1.0;
-        int templateCount = TemplateManager.getInstance().getAllTemplates().size();
-        statsLabel = new JBLabel(MessagesBundle.getText("setting.template.stats", templateCount));
+        statsLabel = new JBLabel();
+        refreshStatsLabel();
         mainPanel.add(statsLabel, gbc);
 
         // Auto-save checkbox
         gbc.gridy = 1;
-        initialAutoSave = setting.isAutoSaveTemplateChanges();
         autoSaveCheckBox = new JBCheckBox(MessagesBundle.getText("setting.template.auto-save"));
-        autoSaveCheckBox.setSelected(initialAutoSave);
+        autoSaveCheckBox.setSelected(setting.isAutoSaveTemplateChanges());
         mainPanel.add(autoSaveCheckBox, gbc);
 
         // Auto-validate checkbox
         gbc.gridy = 2;
-        initialAutoValidate = setting.isAutoValidateTemplateCredentials();
         autoValidateCheckBox = new JBCheckBox(MessagesBundle.getText("setting.template.auto-validate"));
-        autoValidateCheckBox.setSelected(initialAutoValidate);
+        autoValidateCheckBox.setSelected(setting.isAutoValidateTemplateCredentials());
         mainPanel.add(autoValidateCheckBox, gbc);
 
         // Manage templates button
         gbc.gridy = 3;
         gbc.insets = JBUI.insetsTop(8);
         manageButton = new JButton(MessagesBundle.getText("setting.template.manage-button"));
-        manageButton.addActionListener(e -> TemplateManagementDialog.show(project));
+        manageButton.addActionListener(e -> {
+            TemplateManagementDialog.show(project);
+            refreshStatsLabel();
+        });
         mainPanel.add(manageButton, gbc);
 
         // Spacer
@@ -125,8 +120,13 @@ public class TemplateSettingsPanel {
     public void reset() {
         autoSaveCheckBox.setSelected(setting.isAutoSaveTemplateChanges());
         autoValidateCheckBox.setSelected(setting.isAutoValidateTemplateCredentials());
+        refreshStatsLabel();
+    }
 
-        // Refresh stats
+    /**
+     * Refreshes the stats label with the current template count.
+     */
+    private void refreshStatsLabel() {
         int templateCount = TemplateManager.getInstance().getAllTemplates().size();
         statsLabel.setText(MessagesBundle.getText("setting.template.stats", templateCount));
     }

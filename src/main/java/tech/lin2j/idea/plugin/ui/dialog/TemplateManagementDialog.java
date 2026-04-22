@@ -7,17 +7,28 @@ import com.intellij.ui.SearchTextField;
 import com.intellij.ui.components.JBLabel;
 import com.intellij.ui.table.JBTable;
 import com.intellij.util.ui.JBUI;
+
 import org.jetbrains.annotations.Nullable;
 import tech.lin2j.idea.plugin.enums.AuthType;
 import tech.lin2j.idea.plugin.model.CredentialTemplate;
 import tech.lin2j.idea.plugin.service.TemplateManager;
 import tech.lin2j.idea.plugin.uitl.MessagesBundle;
 
-import javax.swing.*;
+import javax.swing.JButton;
+import javax.swing.JComponent;
+import javax.swing.JPanel;
+import javax.swing.JScrollPane;
+import javax.swing.ListSelectionModel;
+import javax.swing.SwingConstants;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
 import javax.swing.table.AbstractTableModel;
-import java.awt.*;
+import java.awt.BorderLayout;
+import java.awt.CardLayout;
+import java.awt.Color;
+import java.awt.FlowLayout;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -36,6 +47,7 @@ public class TemplateManagementDialog extends DialogWrapper {
     private final TemplateTableModel tableModel;
     private JBTable templateTable;
     private SearchTextField searchField;
+    private JPanel centerPanel;
     private List<CredentialTemplate> allTemplates;
 
     public TemplateManagementDialog(@Nullable Project project) {
@@ -108,9 +120,9 @@ public class TemplateManagementDialog extends DialogWrapper {
         templateTable.getColumnModel().getColumn(3).setPreferredWidth(300);
 
         // Double-click to edit
-        templateTable.addMouseListener(new java.awt.event.MouseAdapter() {
+        templateTable.addMouseListener(new MouseAdapter() {
             @Override
-            public void mouseClicked(java.awt.event.MouseEvent e) {
+            public void mouseClicked(MouseEvent e) {
                 if (e.getClickCount() == 2) {
                     onEditTemplate();
                 }
@@ -118,14 +130,17 @@ public class TemplateManagementDialog extends DialogWrapper {
         });
 
         JScrollPane scrollPane = new JScrollPane(templateTable);
-        root.add(scrollPane, BorderLayout.CENTER);
 
         // Empty state label
-        if (allTemplates.isEmpty()) {
-            JLabel emptyLabel = new JBLabel(MessagesBundle.getText("dialog.template-management.empty"), SwingConstants.CENTER);
-            emptyLabel.setForeground(Color.GRAY);
-            root.add(emptyLabel, BorderLayout.CENTER);
-        }
+        JBLabel emptyLabel = new JBLabel(MessagesBundle.getText("dialog.template-management.empty"), SwingConstants.CENTER);
+        emptyLabel.setForeground(Color.GRAY);
+
+        // Use CardLayout to toggle between table and empty state
+        centerPanel = new JPanel(new CardLayout());
+        centerPanel.add(scrollPane, "table");
+        centerPanel.add(emptyLabel, "empty");
+        updateEmptyState();
+        root.add(centerPanel, BorderLayout.CENTER);
 
         return root;
     }
@@ -134,13 +149,32 @@ public class TemplateManagementDialog extends DialogWrapper {
         String query = searchField.getText().trim().toLowerCase();
         List<CredentialTemplate> filtered;
         if (query.isEmpty()) {
-            filtered = new ArrayList<>(allTemplates);
+            filtered = allTemplates.isEmpty()
+                    ? Collections.emptyList()
+                    : allTemplates;
         } else {
-            filtered = allTemplates.stream()
+            List<CredentialTemplate> result = allTemplates.stream()
                     .filter(t -> t.getName() != null && t.getName().toLowerCase().contains(query))
                     .collect(Collectors.toList());
+            filtered = result.isEmpty()
+                    ? Collections.emptyList()
+                    : result;
         }
         tableModel.setData(filtered);
+        updateEmptyState();
+    }
+
+    /**
+     * Toggle between the table view and empty state message
+     * based on whether there is data to display.
+     */
+    private void updateEmptyState() {
+        CardLayout layout = (CardLayout) centerPanel.getLayout();
+        if (tableModel.getRowCount() == 0) {
+            layout.show(centerPanel, "empty");
+        } else {
+            layout.show(centerPanel, "table");
+        }
     }
 
     private void onCreateTemplate() {

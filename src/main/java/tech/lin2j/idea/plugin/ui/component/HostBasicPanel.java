@@ -116,8 +116,8 @@ public class HostBasicPanel {
             CredentialTemplateEditDialog dialog = new CredentialTemplateEditDialog(project, null);
             dialog.show();
             if (dialog.isOK() && dialog.getTemplate() != null) {
-                // noinspection rawtypes
-                CollectionComboBoxModel model = (CollectionComboBoxModel) oneKeyComboBox.getModel();
+                //noinspection unchecked
+                CollectionComboBoxModel<CredentialTemplate> model = (CollectionComboBoxModel<CredentialTemplate>) oneKeyComboBox.getModel();
                 model.add(dialog.getTemplate());
                 oneKeyComboBox.setSelectedItem(dialog.getTemplate());
             }

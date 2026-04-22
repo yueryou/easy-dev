@@ -28,7 +28,6 @@ import tech.lin2j.idea.plugin.model.SeparatorCommand;
 import tech.lin2j.idea.plugin.model.event.CommandAddEvent;
 import tech.lin2j.idea.plugin.service.impl.PluginNotificationService;
 import tech.lin2j.idea.plugin.ui.dialog.AddCommandDialog;
-import tech.lin2j.idea.plugin.ui.dialog.SelectCommandDialog;
 import tech.lin2j.idea.plugin.ui.render.CommandColoredListCellRenderer;
 import tech.lin2j.idea.plugin.uitl.MessagesBundle;
 import tech.lin2j.idea.plugin.uitl.UiUtil;
@@ -51,7 +50,7 @@ import java.util.stream.Collectors;
  * <p>4. 记录历史命令及操作日志</p>
  */
 public class CommandManagePanel extends JPanel implements ApplicationListener<CommandAddEvent> {
-    private static final Logger LOG = Logger.getInstance(SelectCommandDialog.class);
+    private static final Logger LOG = Logger.getInstance(CommandManagePanel.class);
 
     private final JPanel root;
     /**

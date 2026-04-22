@@ -1,8 +1,6 @@
 package tech.lin2j.idea.plugin.ui.settings;
 
 import com.intellij.openapi.options.Configurable;
-import com.intellij.openapi.project.Project;
-import com.intellij.openapi.project.ProjectManager;
 import org.jetbrains.annotations.Nls;
 import org.jetbrains.annotations.Nullable;
 
@@ -26,8 +24,7 @@ public class TemplateConfigurable implements Configurable {
 
     @Override
     public @Nullable JComponent createComponent() {
-        Project project = ProjectManager.getInstance().getDefaultProject();
-        settingsPanel = new TemplateSettingsPanel(project);
+        settingsPanel = new TemplateSettingsPanel(null);
         return settingsPanel.getMainPanel();
     }
 

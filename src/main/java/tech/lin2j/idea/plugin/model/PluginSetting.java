@@ -53,10 +53,17 @@ public class PluginSetting {
     // SFTP/SCP
     private boolean preferSftpOverScp = true;
 
-    // Template Settings
+    /**
+     * Whether to automatically save template changes.
+     * Currently not wired to business logic; retained for future use.
+     */
     private boolean autoSaveTemplateChanges = true;
-    private boolean autoValidateTemplateCredentials = false;
 
+    /**
+     * Whether to automatically validate template credentials.
+     * Currently not wired to business logic; retained for future use.
+     */
+    private boolean autoValidateTemplateCredentials = false;
 
     public boolean isUpdateCheck() {
         return updateCheck;

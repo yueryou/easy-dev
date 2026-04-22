@@ -1,5 +1,6 @@
 package io.github.yueryou.easydev.plugin.ui.component;
 
+import com.intellij.execution.ui.ConsoleViewContentType;
 import com.intellij.openapi.actionSystem.ActionToolbarPosition;
 import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.progress.ProgressIndicator;
@@ -13,18 +14,20 @@ import com.intellij.ui.ToolbarDecorator;
 import com.intellij.ui.components.JBList;
 import com.intellij.ui.components.JBTextField;
 import com.intellij.util.ui.FormBuilder;
+import io.github.yueryou.easydev.plugin.action.CopyPipelineAction;
+import io.github.yueryou.easydev.plugin.action.PastePipelineAction;
+import io.github.yueryou.easydev.plugin.executor.PipelineExecutor;
+import io.github.yueryou.easydev.plugin.log.UnifiedLogger;
 import io.github.yueryou.easydev.plugin.model.Pipeline;
 import io.github.yueryou.easydev.plugin.model.PipelineConfigPersistence;
-import io.github.yueryou.easydev.plugin.model.StepType;
+import io.github.yueryou.easydev.plugin.model.PipelineResult;
 import io.github.yueryou.easydev.plugin.ui.dialog.PipelineEditDialog;
 import io.github.yueryou.easydev.plugin.ui.render.PipelineListCellRenderer;
 import org.jetbrains.annotations.NotNull;
 import tech.lin2j.idea.plugin.event.ApplicationListener;
-import tech.lin2j.idea.plugin.model.ConfigHelper;
 import tech.lin2j.idea.plugin.model.event.PipelineRefreshEvent;
 import tech.lin2j.idea.plugin.service.impl.PluginNotificationService;
 import tech.lin2j.idea.plugin.ssh.CommandLog;
-import tech.lin2j.idea.plugin.ssh.SshServer;
 import tech.lin2j.idea.plugin.ui.module.ConsoleLogView;
 import tech.lin2j.idea.plugin.uitl.MessagesBundle;
 import tech.lin2j.idea.plugin.uitl.UiUtil;
@@ -37,15 +40,6 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.function.Consumer;
-
-import com.intellij.execution.ui.ConsoleViewContentType;
-import tech.lin2j.idea.plugin.event.ApplicationListener;
-import tech.lin2j.idea.plugin.event.ApplicationEvent;
-import io.github.yueryou.easydev.plugin.executor.PipelineExecutor;
-import io.github.yueryou.easydev.plugin.action.CopyPipelineAction;
-import io.github.yueryou.easydev.plugin.action.PastePipelineAction;
-import io.github.yueryou.easydev.plugin.log.UnifiedLogger;
-import io.github.yueryou.easydev.plugin.model.PipelineResult;
 
 /**
  * 自定义任务流水线面板
@@ -173,7 +167,7 @@ public class CommandPipelinePanel extends JPanel implements ApplicationListener<
                     pipelineList.setListData(pipelines.toArray(new Pipeline[0]));
                 } else {
                     List<Pipeline> searchList = pipelines.stream()
-                            .filter(pipeline -> pipeline.getName().contains(text))
+                            .filter(pipeline -> pipeline.getName() != null && pipeline.getName().contains(text))
                             .toList();
                     pipelineList.setListData(searchList.toArray(new Pipeline[0]));
                 }
