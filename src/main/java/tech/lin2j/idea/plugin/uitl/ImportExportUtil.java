@@ -5,6 +5,7 @@ import org.apache.commons.collections.CollectionUtils;
 import tech.lin2j.idea.plugin.model.Command;
 import tech.lin2j.idea.plugin.model.ConfigHelper;
 import tech.lin2j.idea.plugin.model.ConfigImportExport;
+import tech.lin2j.idea.plugin.model.CredentialTemplate;
 import tech.lin2j.idea.plugin.model.ExportOptions;
 import tech.lin2j.idea.plugin.model.UploadProfile;
 import tech.lin2j.idea.plugin.ssh.SshServer;
@@ -16,6 +17,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 /**
  * @author linjinjia
@@ -79,6 +81,15 @@ public class ImportExportUtil {
                 clonePipelines.add(new Pipeline(pipeline));
             }
             dto.setPipelines(clonePipelines);
+        }
+
+        // credential template
+        if (options.isCredentialTemplate()) {
+            List<CredentialTemplate> cloneTemplates = new ArrayList<>();
+            for (CredentialTemplate template : ConfigHelper.getCredentialTemplates()) {
+                cloneTemplates.add(new CredentialTemplate(template));
+            }
+            dto.setCredentialTemplates(cloneTemplates);
         }
 
         return dto;
@@ -174,6 +185,39 @@ public class ImportExportUtil {
             }
         }
 
+        // credential template
+        Map<String, String> templateIdMap = new HashMap<>();
+        if (options.isCredentialTemplate() && CollectionUtils.isNotEmpty(newConfig.getCredentialTemplates())) {
+            for (CredentialTemplate newTemplate : newConfig.getCredentialTemplates()) {
+                String oldUid = newTemplate.getUid();
+                // Check if a template with this UID already exists, skip duplicate
+                CredentialTemplate existing = ConfigHelper.findTemplateById(newTemplate.getUid());
+                if (existing != null) {
+                    templateIdMap.put(oldUid, existing.getUid());
+                    continue;
+                }
+                // Ensure UID is set, add template
+                if (newTemplate.getUid() == null) {
+                    newTemplate.setUid(UUID.randomUUID().toString());
+                }
+                ConfigHelper.addCredentialTemplate(newTemplate);
+                templateIdMap.put(oldUid, newTemplate.getUid());
+            }
+        }
+
+        // Remap server templateId references for newly imported servers
+        if (options.isCredentialTemplate() && !templateIdMap.isEmpty()) {
+            sshIdMap.values().forEach(newSshId -> {
+                SshServer server = ConfigHelper.getSshServerById(newSshId);
+                if (server != null && server.getTemplateId() != null) {
+                    String newTemplateId = templateIdMap.get(server.getTemplateId());
+                    if (newTemplateId != null) {
+                        server.setTemplateId(newTemplateId);
+                    }
+                }
+            });
+        }
+
         return origin;
     }
 
@@ -183,6 +227,7 @@ public class ImportExportUtil {
         options.setCommand(true);
         options.setUploadProfile(true);
         options.setPipeline(true);
+        options.setCredentialTemplate(true);
         return options;
     }
 

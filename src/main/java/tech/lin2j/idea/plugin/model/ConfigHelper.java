@@ -366,4 +366,21 @@ public class ConfigHelper {
         ensureConfigLoadInMemory();
         return CONFIG_PERSISTENCE.getSetting();
     }
+
+    // CredentialTemplate methods
+
+    public static List<CredentialTemplate> getCredentialTemplates() {
+        ensureConfigLoadInMemory();
+        return CONFIG_PERSISTENCE.getCredentialTemplates();
+    }
+
+    public static void addCredentialTemplate(CredentialTemplate template) {
+        ensureConfigLoadInMemory();
+        CONFIG_PERSISTENCE.addCredentialTemplate(template);
+    }
+
+    public static CredentialTemplate findTemplateById(String templateId) {
+        ensureConfigLoadInMemory();
+        return CONFIG_PERSISTENCE.findTemplateById(templateId);
+    }
 }

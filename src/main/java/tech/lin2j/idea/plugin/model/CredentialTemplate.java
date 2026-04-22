@@ -30,6 +30,24 @@ public class CredentialTemplate implements UniqueModel {
     private String encryptedData;
     private Map<String, String> customFields = new HashMap<>();
 
+    public CredentialTemplate() {
+    }
+
+    /**
+     * Copy constructor that creates a deep copy of the given template.
+     *
+     * @param other the template to copy from
+     */
+    public CredentialTemplate(CredentialTemplate other) {
+        this.uid = other.uid;
+        this.name = other.name;
+        this.description = other.description;
+        this.username = other.username;
+        this.authType = other.authType;
+        this.encryptedData = other.encryptedData;
+        this.customFields = other.customFields != null ? new HashMap<>(other.customFields) : new HashMap<>();
+    }
+
     public String getName() {
         return name;
     }
