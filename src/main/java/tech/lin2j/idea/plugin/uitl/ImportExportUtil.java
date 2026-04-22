@@ -17,6 +17,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
 
 /**
@@ -43,36 +44,33 @@ public class ImportExportUtil {
         }
 
         List<SshServer> sshServers = ConfigHelper.sshServers();
-        if (CollectionUtils.isEmpty(sshServers)) {
-            return dto;
+        if (CollectionUtils.isNotEmpty(sshServers)) {
+            List<ConfigImportExport.HostInfo> hostInfos = new ArrayList<>();
+            for (SshServer server : sshServers) {
+                ConfigImportExport.HostInfo hostInfo = new ConfigImportExport.HostInfo();
+                hostInfo.setServer(server.clone());
+                hostInfo.setExportedPassword(server.getPassword());
+                hostInfo.setExportedPassPhrase(server.getPassPhrase());
+                hostInfos.add(hostInfo);
+            }
+            dto.setHostInfos(hostInfos);
         }
 
-        List<ConfigImportExport.HostInfo> hostInfos = new ArrayList<>();
-        for (SshServer server : sshServers) {
-            ConfigImportExport.HostInfo hostInfo = new ConfigImportExport.HostInfo();
-            hostInfo.setServer(server.clone());
-
-            // Commands and upload profiles are now global, not per-server
-            // Export all commands and profiles
-            if (options.isCommand()) {
-                List<Command> cloneCommands = new ArrayList<>();
-                for (Command command : ConfigHelper.getAllCommands()) {
-                    cloneCommands.add(new Command(command));
-                }
-                hostInfo.setCommands(cloneCommands);
+        if (options.isCommand()) {
+            List<Command> cloneCommands = new ArrayList<>();
+            for (Command command : ConfigHelper.getAllCommands()) {
+                cloneCommands.add(new Command(command));
             }
-
-            if (options.isUploadProfile()) {
-                List<UploadProfile> cloneProfiles = new ArrayList<>();
-                for (UploadProfile uploadProfile : ConfigHelper.getAllUploadProfiles()) {
-                    cloneProfiles.add(uploadProfile.clone());
-                }
-                hostInfo.setUploadProfiles(cloneProfiles);
-            }
-
-            hostInfos.add(hostInfo);
+            dto.setCommands(cloneCommands);
         }
-        dto.setHostInfos(hostInfos);
+
+        if (options.isUploadProfile()) {
+            List<UploadProfile> cloneProfiles = new ArrayList<>();
+            for (UploadProfile uploadProfile : ConfigHelper.getAllUploadProfiles()) {
+                cloneProfiles.add(uploadProfile.clone());
+            }
+            dto.setUploadProfiles(cloneProfiles);
+        }
 
         // pipeline
         if (options.isPipeline()) {
@@ -105,6 +103,7 @@ public class ImportExportUtil {
     public static ConfigImportExport importConfig(ConfigImportExport newConfig) throws Exception {
         ConfigImportExport origin = exportBaseOnOptions(allExport());
         ExportOptions options = newConfig.getOptions();
+
         // server tag
         if (options.isServerTags()) {
             List<String> serverTags = ConfigHelper.getServerTags();
@@ -116,66 +115,75 @@ public class ImportExportUtil {
             }
         }
 
-        // server
-        Map<Integer, Integer> commandIdMap = new HashMap<>();
+        // server - import independently
         Map<Integer, Integer> sshIdMap = new HashMap<>();
-        for (ConfigImportExport.HostInfo hostInfo : newConfig.getHostInfos()) {
-            SshServer newSever = hostInfo.getServer();
-            int oldSshId = newSever.getId();
-            int newSshId = ConfigHelper.maxSshServerId() + 1;
-            newSever.setId(newSshId);
-            ConfigHelper.addSshServer(newSever);
-            sshIdMap.put(oldSshId, newSshId);
-            // command
-            // Commands are now global, import without sshId binding
-            if (options.isCommand() && CollectionUtils.isNotEmpty(hostInfo.getCommands())) {
-                hostInfo.getCommands().forEach(newCmd -> {
-                    int oldCmdId = newCmd.getId();
-                    int newCmdId = ConfigHelper.maxCommandId() + 1;
-                    newCmd.setId(newCmdId);
-                    newCmd.setSshId(null); // Clear sshId for new global format
-                    ConfigHelper.addCommand(newCmd);
+        if (CollectionUtils.isNotEmpty(newConfig.getHostInfos())) {
+            for (ConfigImportExport.HostInfo hostInfo : newConfig.getHostInfos()) {
+                SshServer newServer = hostInfo.getServer();
+                int oldSshId = newServer.getId();
 
-                    commandIdMap.put(oldCmdId, newCmdId);
-                });
+                // Deduplicate by IP+port+username
+                SshServer existing = findExistingServer(newServer);
+                if (existing != null) {
+                    sshIdMap.put(oldSshId, existing.getId());
+                    restoreServerPassword(existing, hostInfo.getExportedPassword(), hostInfo.getExportedPassPhrase());
+                    continue;
+                }
+
+                int newSshId = ConfigHelper.maxSshServerId() + 1;
+                newServer.setId(newSshId);
+                ConfigHelper.addSshServer(newServer);
+                sshIdMap.put(oldSshId, newSshId);
+                restoreServerPassword(newServer, hostInfo.getExportedPassword(), hostInfo.getExportedPassPhrase());
             }
-            // upload profile
-            // Upload profiles are now global, import without sshId binding
-            if (options.isUploadProfile() && CollectionUtils.isNotEmpty(hostInfo.getUploadProfiles())) {
-                hostInfo.getUploadProfiles().forEach(newProfile -> {
-                    newProfile.setId(ConfigHelper.maxUploadProfileId() + 1);
-                    newProfile.setSshId(null); // Clear sshId for new global format
-                    // Map all command IDs (commandId, preCommandId, postCommandId)
-                    if (newProfile.getCommandId() != null) {
-                        newProfile.setCommandId(commandIdMap.get(newProfile.getCommandId()));
-                    }
-                    if (newProfile.getPreCommandId() != null) {
-                        newProfile.setPreCommandId(commandIdMap.get(newProfile.getPreCommandId()));
-                    }
-                    if (newProfile.getPostCommandId() != null) {
-                        newProfile.setPostCommandId(commandIdMap.get(newProfile.getPostCommandId()));
-                    }
-                    ConfigHelper.addUploadProfile(newProfile);
-                });
-            }
+
+            // proxy
+            sshIdMap.forEach((oldId, newId) -> {
+                SshServer sshServer = ConfigHelper.getSshServerById(newId);
+                if (sshServer.getProxy() != null) {
+                    int oldProxyId = sshServer.getProxy();
+                    sshServer.setProxy(sshIdMap.get(oldProxyId));
+                }
+            });
         }
 
-        // proxy
-        sshIdMap.forEach((oldId, newId) -> {
-            SshServer newSshServer = ConfigHelper.getSshServerById(newId);
-            if (newSshServer.getProxy() != null) {
-                int oldProxyId = newSshServer.getProxy();
-                newSshServer.setProxy(sshIdMap.get(oldProxyId));
-            }
-        });
+        // command - import independently from servers
+        if (options.isCommand() && CollectionUtils.isNotEmpty(newConfig.getCommands())) {
+            newConfig.getCommands().forEach(newCmd -> {
+                // Skip if UID already exists
+                if (newCmd.getUid() != null && !newCmd.getUid().isEmpty()) {
+                    Command existingCmd = findCommandByUid(newCmd.getUid());
+                    if (existingCmd != null) {
+                        return;
+                    }
+                }
+                newCmd.setId(ConfigHelper.maxCommandId() + 1);
+                newCmd.setSshId(null);
+                ConfigHelper.addCommand(newCmd);
+            });
+        }
+
+        // upload profile - import independently from servers
+        if (options.isUploadProfile() && CollectionUtils.isNotEmpty(newConfig.getUploadProfiles())) {
+            newConfig.getUploadProfiles().forEach(newProfile -> {
+                // Skip if UID already exists
+                if (newProfile.getUid() != null && !newProfile.getUid().isEmpty()) {
+                    UploadProfile existingProfile = findUploadProfileByUid(newProfile.getUid());
+                    if (existingProfile != null) {
+                        return;
+                    }
+                }
+                newProfile.setId(ConfigHelper.maxUploadProfileId() + 1);
+                newProfile.setSshId(null);
+                ConfigHelper.addUploadProfile(newProfile);
+            });
+        }
 
         // pipeline
         if (options.isPipeline() && CollectionUtils.isNotEmpty(newConfig.getPipelines())) {
             for (Pipeline newPipeline : newConfig.getPipelines()) {
-                // Clear existing ID to force creation of new pipeline
                 newPipeline.setId(null);
                 if (newPipeline.getUid() != null) {
-                    // Check if a pipeline with this UID already exists, skip duplicate
                     Pipeline existing = ConfigHelper.getPipelineByUid(newPipeline.getUid());
                     if (existing != null) {
                         continue;
@@ -189,12 +197,10 @@ public class ImportExportUtil {
         Map<String, String> templateIdMap = new HashMap<>();
         if (options.isCredentialTemplate() && CollectionUtils.isNotEmpty(newConfig.getCredentialTemplates())) {
             for (CredentialTemplate newTemplate : newConfig.getCredentialTemplates()) {
-                // Ensure UID is set before duplicate check to avoid null-key map issues
                 if (newTemplate.getUid() == null || newTemplate.getUid().isEmpty()) {
                     newTemplate.setUid(UUID.randomUUID().toString());
                 }
                 String oldUid = newTemplate.getUid();
-                // Check if a template with this UID already exists, skip duplicate
                 CredentialTemplate existing = ConfigHelper.findTemplateById(oldUid);
                 if (existing != null) {
                     templateIdMap.put(oldUid, existing.getUid());
@@ -239,5 +245,43 @@ public class ImportExportUtil {
                 .create()
                 .toJson(data);
         EncryptionUtil.encryptContentIntoFile(content, filepath, password);
+    }
+
+    private static SshServer findExistingServer(SshServer server) {
+        for (SshServer existing : ConfigHelper.sshServers()) {
+            if (Objects.equals(existing.getIp(), server.getIp())
+                    && Objects.equals(existing.getPort(), server.getPort())
+                    && Objects.equals(existing.getUsername(), server.getUsername())) {
+                return existing;
+            }
+        }
+        return null;
+    }
+
+    private static void restoreServerPassword(SshServer server, String password, String passPhrase) {
+        if (password != null && !password.isEmpty()) {
+            server.setPassword(password);
+        }
+        if (passPhrase != null && !passPhrase.isEmpty()) {
+            server.setPassPhrase(passPhrase);
+        }
+    }
+
+    private static Command findCommandByUid(String uid) {
+        for (Command cmd : ConfigHelper.getAllCommands()) {
+            if (uid.equals(cmd.getUid())) {
+                return cmd;
+            }
+        }
+        return null;
+    }
+
+    private static UploadProfile findUploadProfileByUid(String uid) {
+        for (UploadProfile profile : ConfigHelper.getAllUploadProfiles()) {
+            if (uid.equals(profile.getUid())) {
+                return profile;
+            }
+        }
+        return null;
     }
 }

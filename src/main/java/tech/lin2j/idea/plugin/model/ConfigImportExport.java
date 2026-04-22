@@ -19,6 +19,12 @@ public class ConfigImportExport {
 
     private List<HostInfo> hostInfos;
 
+    /** Global commands, independent of servers */
+    private List<Command> commands;
+
+    /** Global upload profiles, independent of servers */
+    private List<UploadProfile> uploadProfiles;
+
     private List<Pipeline> pipelines;
 
     private List<CredentialTemplate> credentialTemplates;
@@ -55,6 +61,22 @@ public class ConfigImportExport {
         this.hostInfos = hostInfos;
     }
 
+    public List<Command> getCommands() {
+        return commands;
+    }
+
+    public void setCommands(List<Command> commands) {
+        this.commands = commands;
+    }
+
+    public List<UploadProfile> getUploadProfiles() {
+        return uploadProfiles;
+    }
+
+    public void setUploadProfiles(List<UploadProfile> uploadProfiles) {
+        this.uploadProfiles = uploadProfiles;
+    }
+
     public List<Pipeline> getPipelines() {
         return pipelines;
     }
@@ -73,8 +95,10 @@ public class ConfigImportExport {
 
     public static class HostInfo {
         private SshServer server;
-        private List<Command> commands;
-        private List<UploadProfile> uploadProfiles;
+        /** Password exported for import on other machines or after config reset */
+        private String exportedPassword;
+        /** Passphrase exported for import on other machines or after config reset */
+        private String exportedPassPhrase;
 
         public SshServer getServer() {
             return server;
@@ -84,20 +108,20 @@ public class ConfigImportExport {
             this.server = server;
         }
 
-        public List<Command> getCommands() {
-            return commands;
+        public String getExportedPassword() {
+            return exportedPassword;
         }
 
-        public void setCommands(List<Command> commands) {
-            this.commands = commands;
+        public void setExportedPassword(String exportedPassword) {
+            this.exportedPassword = exportedPassword;
         }
 
-        public List<UploadProfile> getUploadProfiles() {
-            return uploadProfiles;
+        public String getExportedPassPhrase() {
+            return exportedPassPhrase;
         }
 
-        public void setUploadProfiles(List<UploadProfile> uploadProfiles) {
-            this.uploadProfiles = uploadProfiles;
+        public void setExportedPassPhrase(String exportedPassPhrase) {
+            this.exportedPassPhrase = exportedPassPhrase;
         }
 
     }
