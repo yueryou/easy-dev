@@ -11,6 +11,7 @@ import com.intellij.ui.components.JBLabel;
 import com.intellij.ui.components.JBTextField;
 import com.intellij.uiDesigner.core.GridConstraints;
 import com.intellij.uiDesigner.core.GridLayoutManager;
+import com.intellij.icons.AllIcons;
 import org.jetbrains.annotations.Nullable;
 import tech.lin2j.idea.plugin.enums.AuthType;
 import tech.lin2j.idea.plugin.model.CredentialTemplate;
@@ -161,10 +162,8 @@ public class CredentialTemplateEditDialog extends DialogWrapper {
         }
         passwordPanel.add(passwordField, BorderLayout.CENTER);
 
-        JLabel eyeLabel = new JLabel("\uD83D\uDC41", SwingConstants.CENTER);
-        eyeLabel.setPreferredSize(new Dimension(30, passwordField.getPreferredSize().height));
+        JLabel eyeLabel = new JLabel(AllIcons.Actions.Show, SwingConstants.CENTER);
         eyeLabel.setCursor(new Cursor(Cursor.HAND_CURSOR));
-        char echoChar = passwordField.getEchoChar();
         eyeLabel.addMouseListener(new MouseAdapter() {
             @Override
             public void mousePressed(MouseEvent e) {
@@ -173,7 +172,13 @@ public class CredentialTemplateEditDialog extends DialogWrapper {
 
             @Override
             public void mouseReleased(MouseEvent e) {
-                passwordField.setEchoChar(echoChar);
+                // Read the default echo char at click time to avoid stale capture
+                char defaultEcho = passwordField.getEchoChar();
+                if (defaultEcho != (char) 0) {
+                    passwordField.setEchoChar(defaultEcho);
+                } else {
+                    passwordField.setEchoChar('*');
+                }
             }
         });
         passwordPanel.add(eyeLabel, BorderLayout.EAST);

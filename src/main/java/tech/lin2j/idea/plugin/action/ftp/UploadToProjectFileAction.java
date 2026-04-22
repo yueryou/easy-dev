@@ -1,15 +1,18 @@
 package tech.lin2j.idea.plugin.action.ftp;
 
+import com.intellij.icons.AllIcons;
 import com.intellij.openapi.actionSystem.AnAction;
 import com.intellij.openapi.actionSystem.AnActionEvent;
 import com.intellij.openapi.actionSystem.CommonDataKeys;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.vfs.VirtualFile;
+
 import org.jetbrains.annotations.NotNull;
+
 import io.github.yueryou.easydev.plugin.ui.SelectServersForUploadDialog;
 import tech.lin2j.idea.plugin.uitl.MessagesBundle;
 
-import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -23,7 +26,7 @@ public class UploadToProjectFileAction extends AnAction {
     public UploadToProjectFileAction() {
         super(MessagesBundle.getText("action.project.uploadto.text"),
                 MessagesBundle.getText("action.project.uploadto.description"),
-                com.intellij.icons.AllIcons.Actions.Upload);
+                AllIcons.Actions.Upload);
     }
 
     @Override
@@ -38,10 +41,7 @@ public class UploadToProjectFileAction extends AnAction {
             return;
         }
 
-        List<VirtualFile> selectedFiles = new ArrayList<>();
-        for (VirtualFile f : files) {
-            selectedFiles.add(f);
-        }
+        List<VirtualFile> selectedFiles = Arrays.asList(files);
 
         SelectServersForUploadDialog dialog = new SelectServersForUploadDialog(project, selectedFiles);
         dialog.show();

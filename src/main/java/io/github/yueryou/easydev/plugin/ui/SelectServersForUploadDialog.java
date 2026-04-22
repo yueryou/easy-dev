@@ -12,8 +12,10 @@ import com.intellij.ui.content.Content;
 import com.intellij.ui.table.JBTable;
 import com.intellij.util.ui.FormBuilder;
 import com.intellij.util.ui.JBUI;
+
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+
 import tech.lin2j.idea.plugin.file.ConsoleTransferListener;
 import tech.lin2j.idea.plugin.file.filter.ConsoleFileFilter;
 import tech.lin2j.idea.plugin.model.ConfigHelper;
@@ -24,13 +26,26 @@ import tech.lin2j.idea.plugin.ssh.SshServer;
 import tech.lin2j.idea.plugin.ssh.sshj.SshjConnection;
 import tech.lin2j.idea.plugin.uitl.MessagesBundle;
 
-import javax.swing.*;
+import java.awt.BorderLayout;
+import java.awt.Cursor;
+import java.awt.Dimension;
+import java.awt.Rectangle;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
+import java.awt.event.MouseMotionAdapter;
+
+import javax.swing.JPanel;
+import javax.swing.JScrollPane;
+import javax.swing.JTable;
+import javax.swing.JTextArea;
+import javax.swing.JTextField;
 import javax.swing.table.AbstractTableModel;
-import java.awt.*;
+
 import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.CountDownLatch;
 import java.util.stream.Collectors;
 
 /**
@@ -77,7 +92,13 @@ public class SelectServersForUploadDialog extends DialogWrapper {
 
         ColoredTableCellRenderer nameRenderer = new ColoredTableCellRenderer() {
             @Override
-            protected void customizeCellRenderer(JTable table, Object value, boolean selected, boolean hasFocus, int row, int column) {
+            protected void customizeCellRenderer(
+                    @NotNull JTable table,
+                    Object value,
+                    boolean selected,
+                    boolean hasFocus,
+                    int row,
+                    int column) {
                 if (value instanceof SshServer) {
                     SshServer server = (SshServer) value;
                     String display = server.getIp();
@@ -91,9 +112,9 @@ public class SelectServersForUploadDialog extends DialogWrapper {
         serverTable.getColumnModel().getColumn(1).setCellRenderer(nameRenderer);
 
         // Single-click toggle for checkbox column
-        serverTable.addMouseListener(new java.awt.event.MouseAdapter() {
+        serverTable.addMouseListener(new MouseAdapter() {
             @Override
-            public void mousePressed(java.awt.event.MouseEvent e) {
+            public void mousePressed(MouseEvent e) {
                 int col = serverTable.columnAtPoint(e.getPoint());
                 int row = serverTable.rowAtPoint(e.getPoint());
                 if (col == 0 && row >= 0 && row < serverTable.getRowCount()) {
@@ -107,9 +128,9 @@ public class SelectServersForUploadDialog extends DialogWrapper {
         });
 
         // Show checkbox cursor on hover
-        serverTable.addMouseMotionListener(new java.awt.event.MouseMotionAdapter() {
+        serverTable.addMouseMotionListener(new MouseMotionAdapter() {
             @Override
-            public void mouseMoved(java.awt.event.MouseEvent e) {
+            public void mouseMoved(MouseEvent e) {
                 int col = serverTable.columnAtPoint(e.getPoint());
                 serverTable.setCursor(new Cursor(col == 0 ? Cursor.HAND_CURSOR : Cursor.DEFAULT_CURSOR));
             }
@@ -162,8 +183,22 @@ public class SelectServersForUploadDialog extends DialogWrapper {
             commandLog.info("开始上传 " + selectedFiles.size() + " 个文件/目录 -> " + selectedServers.size() + " 台服务器");
             commandLog.info("========================================");
 
+            CountDownLatch latch = new CountDownLatch(selectedServers.size());
             for (SshServer server : selectedServers) {
-                uploadToServer(server, remotePath, postCommand, commandLog);
+                ApplicationManager.getApplication().executeOnPooledThread(() -> {
+                    try {
+                        uploadToServer(server, remotePath, postCommand, commandLog);
+                    } finally {
+                        latch.countDown();
+                    }
+                });
+            }
+
+            try {
+                latch.await();
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                commandLog.error("上传被中断");
             }
 
             commandLog.info("上传结束 at: " + LocalDateTime.now());
@@ -171,7 +206,7 @@ public class SelectServersForUploadDialog extends DialogWrapper {
     }
 
     private void close(DialogWrapper dialog) {
-        dialog.close(com.intellij.openapi.ui.DialogWrapper.OK_EXIT_CODE);
+        dialog.close(OK_EXIT_CODE);
     }
 
     private void showToolWindow() {
@@ -210,7 +245,7 @@ public class SelectServersForUploadDialog extends DialogWrapper {
             // Execute post-upload command in remote path directory
             if (postCommand != null && !postCommand.isEmpty()) {
                 commandLog.info("=== 执行上传后命令 ===");
-                String cmd = "cd " + remotePath + " && " + postCommand;
+                String cmd = "cd " + escapeShellArg(remotePath) + " && " + escapeShellArg(postCommand);
                 sshjConnection.execute(cmd, commandLog);
                 commandLog.info("=== 命令执行完成 ===");
             }
@@ -223,6 +258,17 @@ public class SelectServersForUploadDialog extends DialogWrapper {
                 sshjConnection.close();
             }
         }
+    }
+
+    /**
+     * Escapes a string for safe use as a shell argument by wrapping it in single quotes
+     * and escaping any embedded single quotes.
+     */
+    private static String escapeShellArg(String arg) {
+        if (arg == null) {
+            return "''";
+        }
+        return "'" + arg.replace("'", "'\\''") + "'";
     }
 
     private static class ServerTableModel extends AbstractTableModel {
@@ -244,7 +290,7 @@ public class SelectServersForUploadDialog extends DialogWrapper {
         }
 
         @Override
-        public Class<?> getColumnClass(int columnIndex) {
+        public @NotNull Class<?> getColumnClass(int columnIndex) {
             return columnIndex == 0 ? Boolean.class : SshServer.class;
         }
 

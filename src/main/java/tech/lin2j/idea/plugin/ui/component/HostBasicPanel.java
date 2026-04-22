@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 
 /**
  *
@@ -96,12 +97,13 @@ public class HostBasicPanel {
         templates.addAll(TemplateManager.getInstance().getAllTemplates());
         oneKeyComboBox.setModel(new CollectionComboBoxModel<>(templates));
 
+        // noinspection rawtypes
         oneKeyComboBox.setRenderer(new DefaultListCellRenderer() {
             @Override
             public Component getListCellRendererComponent(JList<?> list, Object value, int index, boolean isSelected, boolean cellHasFocus) {
                 super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
                 if (value == null) {
-                    setText("<None>");
+                    setText(MessagesBundle.getText("dialog.panel.host.basic.onekey.none"));
                 } else {
                     setText(((CredentialTemplate) value).getName());
                 }
@@ -109,15 +111,14 @@ public class HostBasicPanel {
             }
         });
 
-        addOneKeyButton = new JButton("+");
+        addOneKeyButton = new JButton(MessagesBundle.getText("dialog.panel.host.basic.onekey.add"));
         addOneKeyButton.addActionListener(e -> {
             CredentialTemplateEditDialog dialog = new CredentialTemplateEditDialog(project, null);
             dialog.show();
             if (dialog.isOK() && dialog.getTemplate() != null) {
-                List<CredentialTemplate> items = new ArrayList<>();
-                items.add(null);
-                items.addAll(TemplateManager.getInstance().getAllTemplates());
-                oneKeyComboBox.setModel(new CollectionComboBoxModel<>(items));
+                // noinspection rawtypes
+                CollectionComboBoxModel model = (CollectionComboBoxModel) oneKeyComboBox.getModel();
+                model.add(dialog.getTemplate());
                 oneKeyComboBox.setSelectedItem(dialog.getTemplate());
             }
         });
@@ -145,7 +146,10 @@ public class HostBasicPanel {
                     authDesc = MessagesBundle.getText("dialog.panel.host.basic.auth-type.private");
                 }
             }
-            templateInfoLabel.setText("User: " + selected.getUsername() + " | Auth: " + authDesc);
+            templateInfoLabel.setText(MessagesBundle.getText(
+                    "dialog.panel.host.basic.onekey.info",
+                    selected.getUsername(),
+                    authDesc));
         } else {
             templateInfoLabel.setText("");
         }
@@ -166,9 +170,7 @@ public class HostBasicPanel {
 
     private void setContent() {
         if (contentProvider != null) {
-            String ipText = contentProvider.getIpList().stream()
-                    .reduce((a, b) -> a + ", " + b)
-                    .orElse("");
+            String ipText = String.join(", ", contentProvider.getIpList());
             ipInput.setText(ipText);
             portInput.setText(contentProvider.getPort().toString());
             tagComboBox.setSelectedItem(contentProvider.getTag());
@@ -202,7 +204,7 @@ public class HostBasicPanel {
                 List<String> ipList = Arrays.stream(ipString.split(","))
                         .map(String::trim)
                         .filter(s -> !s.isEmpty())
-                        .collect(java.util.stream.Collectors.toList());
+                        .collect(Collectors.toList());
                 server.setIps(ipList);
             } else {
                 server.setIps(null);
