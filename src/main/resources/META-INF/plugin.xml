@@ -18,7 +18,7 @@
         <li>Batch execute remote commands</li>
         <li>Batch open multiple SSH terminal connections</li>
         <li>Batch add server information</li>
-        <li>Custom task orchestration</li>
+        <li>Custom pipeline task orchestration</li>
         <li>Custom quick commands</li>
         <li>Add/Edit/Remove/Search server information</li>
         <li>Add/Edit/Remove/Share/Search commands and show command details</li>
@@ -79,6 +79,8 @@
     <h2>release 1.6.0</h2>
     <ul>
         <li>Support for OneKey feature, allowing authentication configuration reuse</li>
+        <li>Support create ssh config base exist one</li>
+        <li>Supports directly uploading selected files or folders</li>
         <li>Support for pipeline duplication feature</li>
         <li>Fixed a bug where shortcuts became invalid after creating/closing an SSH terminal</li>
         <li>Support for delayed periodic service status probing</li>
