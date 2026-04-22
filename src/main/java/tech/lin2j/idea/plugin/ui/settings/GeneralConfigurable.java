@@ -152,6 +152,8 @@ public class GeneralConfigurable implements SearchableConfigurable, Configurable
         String serverTag = MessagesBundle.getText("setting.general.ie.export.options.server-tag");
         String command = MessagesBundle.getText("setting.general.ie.export.options.command");
         String uploadProfile = MessagesBundle.getText("setting.general.ie.export.options.upload-profile");
+        String pipeline = MessagesBundle.getText("setting.general.ie.export.options.pipeline");
+        String credentialTemplate = MessagesBundle.getText("setting.general.ie.export.options.credential-template");
 
         // default import & export path
         defaultExportImportPath = new TextFieldWithBrowseButton();
@@ -166,10 +168,12 @@ public class GeneralConfigurable implements SearchableConfigurable, Configurable
         });
 
         // export options checkbox
-        JPanel ecg = new JPanel(new GridLayout(1, 3));
+        JPanel ecg = new JPanel(new GridLayout(0, 3));
         ecg.add(new OptionCheckbox(serverTag, exportOptions.isServerTags(), exportOptions::setServerTags));
         ecg.add(new OptionCheckbox(command, exportOptions.isCommand(), exportOptions::setCommand));
         ecg.add(new OptionCheckbox(uploadProfile, exportOptions.isUploadProfile(), exportOptions::setUploadProfile));
+        ecg.add(new OptionCheckbox(pipeline, exportOptions.isPipeline(), exportOptions::setPipeline));
+        ecg.add(new OptionCheckbox(credentialTemplate, exportOptions.isCredentialTemplate(), exportOptions::setCredentialTemplate));
 
         JPanel result = FormBuilder.createFormBuilder()
                 .addLabeledComponent(defaultPathTip, defaultExportImportPath)
