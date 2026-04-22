@@ -4,8 +4,8 @@ import io.github.yueryou.easydev.plugin.model.ExecutionContext;
 import io.github.yueryou.easydev.plugin.model.PipelineStep;
 import io.github.yueryou.easydev.plugin.model.StepResult;
 import io.github.yueryou.easydev.plugin.model.UploadStep;
+import tech.lin2j.idea.plugin.file.filter.ExtExcludeFilter;
 import tech.lin2j.idea.plugin.file.filter.FileFilter;
-import tech.lin2j.idea.plugin.file.filter.RegexFileFilter;
 import tech.lin2j.idea.plugin.model.Command;
 import tech.lin2j.idea.plugin.model.ConfigHelper;
 import tech.lin2j.idea.plugin.model.UploadProfile;
@@ -19,6 +19,8 @@ import tech.lin2j.idea.plugin.ssh.sshj.SshjConnection;
 
 import java.io.File;
 import java.util.concurrent.FutureTask;
+
+import static tech.lin2j.idea.plugin.uitl.FileUtil.isDirectory;
 
 /**
  * 上传文件执行器
@@ -143,20 +145,46 @@ public class UploadExecutor {
                 return StepResult.failure("SSH 连接建立失败");
             }
 
-            // 执行上传
             boolean createRemoteDir = uploadStep.isCreateRemoteDir();
             context.getLogConsumer().accept("[Upload] 是否创建远程目录：" + createRemoteDir);
 
             CommandLog commandLog = createCommandLog(context, "[Upload] ");
-            // 如果配置了 exclude 过滤规则，使用 RegexFileFilter；否则使用接受所有文件的默认 filter
+            // 如果配置了 exclude 过滤规则，使用 ExtExcludeFilter；否则使用接受所有文件的默认 filter
             FileFilter fileFilter = profile.getExclude() != null && !profile.getExclude().isEmpty()
-                    ? new RegexFileFilter(profile.getExclude(), commandLog)
+                    ? new ExtExcludeFilter(profile.getExclude(), commandLog)
                     : (filename) -> true;
-            boolean success = sshService.upload(fileFilter, connection, localFile, remoteDir, commandLog, createRemoteDir);
+
+            boolean includeCurrent = profile.getIncludeCurrentDir() != null && profile.getIncludeCurrentDir();
+            boolean allUploaded;
+
+            if (file.isFile() || (includeCurrent && isDirectory(localFile))) {
+                // 文件或包含当前目录：上传时保留根目录
+                allUploaded = sshService.upload(fileFilter, connection, localFile, remoteDir, commandLog, createRemoteDir);
+            } else {
+                // 不包含当前目录：遍历子文件逐个上传
+                context.getLogConsumer().accept("[Upload] 不包含当前目录，遍历子文件上传");
+                allUploaded = true;
+                ExtExcludeFilter extExcludeFilter = new ExtExcludeFilter(profile.getExclude(), commandLog);
+                File dir = new File(localFile);
+                String[] subFiles = dir.list();
+                if (subFiles != null) {
+                    for (String subFile : subFiles) {
+                        String subTargetFile = localFile + "/" + subFile;
+                        if (!extExcludeFilter.accept(subFile)) {
+                            context.getLogConsumer().accept("[Upload] 排除子文件 [" + subTargetFile + "]");
+                            continue;
+                        }
+                        if (!sshService.upload(fileFilter, connection, subTargetFile, remoteDir, commandLog, false)) {
+                            allUploaded = false;
+                            break;
+                        }
+                    }
+                }
+            }
 
             // 执行后置命令（同步）
             boolean postCommandSuccess = true;
-            if (success && profile.getPostCommandId() != null) {
+            if (allUploaded && profile.getPostCommandId() != null) {
                 context.getLogConsumer().accept("[Upload] 执行后置命令...");
                 StepResult postCommandResult = executeCommand(profile.getPostCommandId(), profile, server, context);
                 if (!postCommandResult.isSuccess()) {
@@ -167,13 +195,13 @@ public class UploadExecutor {
 
             connection.close();
 
-            if (success && postCommandSuccess) {
+            if (allUploaded && postCommandSuccess) {
                 context.getLogConsumer().accept("[Upload] 上传成功");
                 StepResult result = StepResult.success("文件上传成功", 0);
                 result.addOutput("uploadedFile", localFile);
                 result.addOutput("remotePath", remoteDir);
                 return result;
-            } else if (!success) {
+            } else if (!allUploaded) {
                 context.getLogConsumer().accept("[Upload] 上传失败");
                 return StepResult.failure("文件上传失败");
             } else {
