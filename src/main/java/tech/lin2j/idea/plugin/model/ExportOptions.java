@@ -14,6 +14,8 @@ public class ExportOptions implements Cloneable {
 
     private boolean serverTags;
 
+    private boolean pipeline;
+
     /**
      * always export server info
      */
@@ -45,6 +47,14 @@ public class ExportOptions implements Cloneable {
         this.serverTags = serverTags;
     }
 
+    public boolean isPipeline() {
+        return pipeline;
+    }
+
+    public void setPipeline(boolean pipeline) {
+        this.pipeline = pipeline;
+    }
+
     @Override
     public ExportOptions clone() {
         try {
@@ -54,6 +64,7 @@ public class ExportOptions implements Cloneable {
             newOne.setServerTags(serverTags);
             newOne.setCommand(command);
             newOne.setUploadProfile(uploadProfile);
+            newOne.setPipeline(pipeline);
             return newOne;
         }
     }
@@ -65,11 +76,12 @@ public class ExportOptions implements Cloneable {
         ExportOptions options = (ExportOptions) o;
         return command == options.command
                 && uploadProfile == options.uploadProfile
-                && serverTags == options.serverTags;
+                && serverTags == options.serverTags
+                && pipeline == options.pipeline;
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(command, uploadProfile, serverTags);
+        return Objects.hash(command, uploadProfile, serverTags, pipeline);
     }
 }

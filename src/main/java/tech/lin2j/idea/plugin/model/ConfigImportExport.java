@@ -3,6 +3,7 @@ package tech.lin2j.idea.plugin.model;
 import tech.lin2j.idea.plugin.ssh.SshServer;
 
 import java.util.List;
+import io.github.yueryou.easydev.plugin.model.Pipeline;
 
 /**
  * @author linjinjia
@@ -17,6 +18,8 @@ public class ConfigImportExport {
     private List<String> serverTags;
 
     private List<HostInfo> hostInfos;
+
+    private List<Pipeline> pipelines;
 
     public ExportOptions getOptions() {
         return options;
@@ -48,6 +51,14 @@ public class ConfigImportExport {
 
     public void setHostInfos(List<HostInfo> hostInfos) {
         this.hostInfos = hostInfos;
+    }
+
+    public List<Pipeline> getPipelines() {
+        return pipelines;
+    }
+
+    public void setPipelines(List<Pipeline> pipelines) {
+        this.pipelines = pipelines;
     }
 
     public static class HostInfo {
