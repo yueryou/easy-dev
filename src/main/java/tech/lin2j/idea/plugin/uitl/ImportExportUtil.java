@@ -8,6 +8,8 @@ import tech.lin2j.idea.plugin.model.ConfigImportExport;
 import tech.lin2j.idea.plugin.model.ExportOptions;
 import tech.lin2j.idea.plugin.model.UploadProfile;
 import tech.lin2j.idea.plugin.ssh.SshServer;
+import io.github.yueryou.easydev.plugin.model.Pipeline;
+import io.github.yueryou.easydev.plugin.model.PipelineConfigPersistence;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -69,6 +71,15 @@ public class ImportExportUtil {
             hostInfos.add(hostInfo);
         }
         dto.setHostInfos(hostInfos);
+
+        // pipeline
+        if (options.isPipeline()) {
+            List<Pipeline> clonePipelines = new ArrayList<>();
+            for (Pipeline pipeline : ConfigHelper.getAllPipelines()) {
+                clonePipelines.add(new Pipeline(pipeline));
+            }
+            dto.setPipelines(clonePipelines);
+        }
 
         return dto;
     }
@@ -147,6 +158,22 @@ public class ImportExportUtil {
             }
         });
 
+        // pipeline
+        if (options.isPipeline() && CollectionUtils.isNotEmpty(newConfig.getPipelines())) {
+            for (Pipeline newPipeline : newConfig.getPipelines()) {
+                // Clear existing ID to force creation of new pipeline
+                newPipeline.setId(null);
+                if (newPipeline.getUid() != null) {
+                    // Check if a pipeline with this UID already exists, skip duplicate
+                    Pipeline existing = ConfigHelper.getPipelineByUid(newPipeline.getUid());
+                    if (existing != null) {
+                        continue;
+                    }
+                }
+                PipelineConfigPersistence.addPipeline(newPipeline);
+            }
+        }
+
         return origin;
     }
 
@@ -155,6 +182,7 @@ public class ImportExportUtil {
         options.setServerTags(true);
         options.setCommand(true);
         options.setUploadProfile(true);
+        options.setPipeline(true);
         return options;
     }
 

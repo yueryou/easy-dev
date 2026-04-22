@@ -41,6 +41,19 @@ public class Pipeline implements UniqueModel {
         this.updatedAt = this.createdAt;
     }
 
+    /**
+     * Copy constructor for cloning (used by export logic).
+     */
+    public Pipeline(Pipeline other) {
+        this.id = other.id;
+        this.uid = other.uid;
+        this.name = other.name;
+        this.steps = other.steps != null ? new ArrayList<>(other.steps) : new ArrayList<>();
+        this.onFailure = other.onFailure;
+        this.createdAt = other.createdAt;
+        this.updatedAt = other.updatedAt;
+    }
+
     @Override
     public String getUid() {
         return uid;
