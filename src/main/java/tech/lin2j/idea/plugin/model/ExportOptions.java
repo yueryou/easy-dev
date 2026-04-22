@@ -16,6 +16,8 @@ public class ExportOptions implements Cloneable {
 
     private boolean pipeline;
 
+    private boolean credentialTemplate;
+
     /**
      * always export server info
      */
@@ -55,6 +57,14 @@ public class ExportOptions implements Cloneable {
         this.pipeline = pipeline;
     }
 
+    public boolean isCredentialTemplate() {
+        return credentialTemplate;
+    }
+
+    public void setCredentialTemplate(boolean credentialTemplate) {
+        this.credentialTemplate = credentialTemplate;
+    }
+
     @Override
     public ExportOptions clone() {
         try {
@@ -65,6 +75,7 @@ public class ExportOptions implements Cloneable {
             newOne.setCommand(command);
             newOne.setUploadProfile(uploadProfile);
             newOne.setPipeline(pipeline);
+            newOne.setCredentialTemplate(credentialTemplate);
             return newOne;
         }
     }
@@ -77,11 +88,12 @@ public class ExportOptions implements Cloneable {
         return command == options.command
                 && uploadProfile == options.uploadProfile
                 && serverTags == options.serverTags
-                && pipeline == options.pipeline;
+                && pipeline == options.pipeline
+                && credentialTemplate == options.credentialTemplate;
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(command, uploadProfile, serverTags, pipeline);
+        return Objects.hash(command, uploadProfile, serverTags, pipeline, credentialTemplate);
     }
 }

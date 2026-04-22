@@ -21,6 +21,8 @@ public class ConfigImportExport {
 
     private List<Pipeline> pipelines;
 
+    private List<CredentialTemplate> credentialTemplates;
+
     public ExportOptions getOptions() {
         return options;
     }
@@ -59,6 +61,14 @@ public class ConfigImportExport {
 
     public void setPipelines(List<Pipeline> pipelines) {
         this.pipelines = pipelines;
+    }
+
+    public List<CredentialTemplate> getCredentialTemplates() {
+        return credentialTemplates;
+    }
+
+    public void setCredentialTemplates(List<CredentialTemplate> credentialTemplates) {
+        this.credentialTemplates = credentialTemplates;
     }
 
     public static class HostInfo {
