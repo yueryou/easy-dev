@@ -51,7 +51,7 @@ public class HostSettingsDialog extends DialogWrapper {
         if (server == null) {
             server = new SshServer();
         }
-        boolean isOk = hostBasicPanel.saveServerInfo(server, true);
+        boolean isOk = hostBasicPanel.saveServerInfo(server, isAdd);
         if (!isOk) {
             return;
         }
