@@ -82,6 +82,8 @@ public class UploadExecutor {
             return StepResult.failure("SSH 服务器未配置");
         }
 
+        context.getLogConsumer().accept("[Upload] 目标服务器：" + server.getIp() + ":" + server.getPort() + " (" + server.getUsername() + ")");
+
         // 获取 UploadProfile
         String profileId = uploadStep.getUploadProfileId();
         if (profileId == null || profileId.isEmpty()) {
@@ -156,10 +158,15 @@ public class UploadExecutor {
 
             boolean includeCurrent = profile.getIncludeCurrentDir() != null && profile.getIncludeCurrentDir();
             boolean allUploaded;
+            // 记录上传完成的远程文件路径，用于后续 SHA256 计算
+            java.util.List<String> uploadedRemotePaths = new java.util.ArrayList<>();
 
             if (file.isFile() || (includeCurrent && isDirectory(localFile))) {
                 // 文件或包含当前目录：上传时保留根目录
                 allUploaded = sshService.upload(fileFilter, connection, localFile, remoteDir, commandLog, createRemoteDir);
+                if (allUploaded) {
+                    uploadedRemotePaths.add(computeRemoteFullPath(remoteDir, new File(localFile).getName(), includeCurrent));
+                }
             } else {
                 // 不包含当前目录：遍历子文件逐个上传
                 context.getLogConsumer().accept("[Upload] 不包含当前目录，遍历子文件上传");
@@ -178,6 +185,7 @@ public class UploadExecutor {
                             allUploaded = false;
                             break;
                         }
+                        uploadedRemotePaths.add(computeRemoteFullPath(remoteDir, subFile, false));
                     }
                 }
             }
@@ -191,6 +199,11 @@ public class UploadExecutor {
                     context.getLogConsumer().accept("[Upload] 后置命令执行失败");
                     postCommandSuccess = false;
                 }
+            }
+
+            // 打印上传完成后的文件路径和 SHA256
+            if (allUploaded) {
+                printRemoteFileChecksums(context, connection, uploadedRemotePaths);
             }
 
             connection.close();
@@ -267,6 +280,44 @@ public class UploadExecutor {
         } catch (Exception e) {
             context.getLogConsumer().accept("[命令] 命令执行异常：" + e.getMessage());
             return StepResult.failure("命令执行异常：" + e.getMessage());
+        }
+    }
+
+    /**
+     * 计算远程文件完整路径
+     */
+    private static String computeRemoteFullPath(String remoteDir, String fileName, boolean isDirUpload) {
+        if (isDirUpload) {
+            return remoteDir;
+        }
+        if (remoteDir.endsWith("/") || remoteDir.endsWith("\\")) {
+            return remoteDir + fileName;
+        }
+        return remoteDir + "/" + fileName;
+    }
+
+    /**
+     * 打印远程文件完整路径和 SHA256 值
+     */
+    private static void printRemoteFileChecksums(ExecutionContext context, SshjConnection connection,
+                                                   java.util.List<String> remotePaths) {
+        for (String remotePath : remotePaths) {
+            try {
+                tech.lin2j.idea.plugin.ssh.SshStatus status = connection.execute(
+                    "sha256sum " + remotePath + " | awk '{print $1}' && stat -c '%y' " + remotePath + " | sed 's/\\.[0-9]*//'");
+                if (status.isSuccess()) {
+                    String[] lines = status.getMessage().trim().split("\n");
+                    if (lines.length >= 2) {
+                        context.getLogConsumer().accept("[Upload] 远程文件路径：" + remotePath);
+                        context.getLogConsumer().accept("[Upload] SHA256：" + lines[0].trim());
+                        context.getLogConsumer().accept("[Upload] 文件修改时间：" + lines[1].trim());
+                    }
+                } else {
+                    context.getLogConsumer().accept("[Upload] SHA256 计算失败：" + status.getMessage());
+                }
+            } catch (Exception e) {
+                context.getLogConsumer().accept("[Upload] SHA256 计算异常：" + e.getMessage());
+            }
         }
     }
 }

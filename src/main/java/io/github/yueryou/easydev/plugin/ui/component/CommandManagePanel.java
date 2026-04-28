@@ -74,6 +74,7 @@ public class CommandManagePanel extends JPanel implements ApplicationListener<Co
     private transient Command selectedCommand;
 
     private final transient Project project;
+    private final Integer sshId;
     private final PluginNotificationService notificationService;
 
     /**
@@ -83,6 +84,7 @@ public class CommandManagePanel extends JPanel implements ApplicationListener<Co
 
     public CommandManagePanel(Project project) {
         this.project = project;
+        this.sshId = null;
 
         initInput();
         initCommandList();
@@ -98,6 +100,26 @@ public class CommandManagePanel extends JPanel implements ApplicationListener<Co
                 .addComponentFillVertically(createCommandToolbarPanel(), 8)
                 .addLabeledComponent(MessagesBundle.getText("dialog.command.detail"), commandDetails)
                 .addLabeledComponent(MessagesBundle.getText("dialog.command.send.hosts"), searchableCheckboxList)
+                .getPanel();
+        root.setPreferredSize(new Dimension(UiUtil.screenWidth() / 2, 600));
+        notificationService = ApplicationManager.getApplication().getService(PluginNotificationService.class);
+    }
+
+    public CommandManagePanel(Project project, Integer sshId) {
+        this.project = project;
+        this.sshId = sshId;
+
+        initInput();
+        initCommandList();
+        initCommandDetail();
+        initSessionCheckableList(List.of()); // Empty list for SSH mode
+        bindInputChangeListener(loadCommandList());
+
+        // SSH mode: no session checkbox list
+        root = FormBuilder.createFormBuilder()
+                .addLabeledComponent(MessagesBundle.getText("dialog.command.search.show"), searchInput)
+                .addComponentFillVertically(createCommandToolbarPanel(), 8)
+                .addLabeledComponent(MessagesBundle.getText("dialog.command.detail"), commandDetails)
                 .getPanel();
         root.setPreferredSize(new Dimension(UiUtil.screenWidth() / 2, 600));
         notificationService = ApplicationManager.getApplication().getService(PluginNotificationService.class);
@@ -178,16 +200,24 @@ public class CommandManagePanel extends JPanel implements ApplicationListener<Co
             protected boolean onDoubleClick(MouseEvent e) {
                 Command command = commandList.getSelectedValue();
                 if (command != null) {
-                    // 先捕获命令和选中的 session（对话框关闭前 UI 可用）
-                    Command capturedCommand = command;
-                    List<String> capturedSessions = searchableCheckboxList.getSelectedItems();
-                    // 关闭对话框，让焦点回到终端
-                    if (onDoubleClickExecute != null) {
-                        onDoubleClickExecute.run();
+                    if (sshId != null) {
+                        // SSH mode: execute directly on the server
+                        Command capturedCommand = command;
+                        if (onDoubleClickExecute != null) {
+                            onDoubleClickExecute.run();
+                        }
+                        SwingUtilities.invokeLater(() ->
+                            executeCommandOnServer(capturedCommand));
+                    } else {
+                        // Terminal mode: original logic
+                        Command capturedCommand = command;
+                        List<String> capturedSessions = searchableCheckboxList.getSelectedItems();
+                        if (onDoubleClickExecute != null) {
+                            onDoubleClickExecute.run();
+                        }
+                        SwingUtilities.invokeLater(() ->
+                            executeCommandAfterDialogClose(capturedCommand, capturedSessions));
                     }
-                    // 对话框关闭后，焦点回到终端，此时再查找活跃终端和发送命令
-                    SwingUtilities.invokeLater(() ->
-                        executeCommandAfterDialogClose(capturedCommand, capturedSessions));
                 }
                 return true;
             }
@@ -253,6 +283,21 @@ public class CommandManagePanel extends JPanel implements ApplicationListener<Co
      */
     public void setOnDoubleClickExecute(Runnable callback) {
         this.onDoubleClickExecute = callback;
+    }
+
+    /**
+     * Execute command directly on SSH server (SSH mode, no terminal)
+     */
+    private void executeCommandOnServer(Command command) {
+        if (project == null || command == null) return;
+
+        tech.lin2j.idea.plugin.ssh.SshServer server = tech.lin2j.idea.plugin.model.ConfigHelper.getSshServerById(sshId);
+        if (server == null) {
+            notificationService.showNotification(project, "Execute command", "Server not found");
+            return;
+        }
+
+        tech.lin2j.idea.plugin.uitl.CommandUtil.executeCommand(project, command, server, null);
     }
 
     /**

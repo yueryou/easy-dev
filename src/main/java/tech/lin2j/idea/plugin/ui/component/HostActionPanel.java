@@ -1,7 +1,7 @@
 package tech.lin2j.idea.plugin.ui.component;
 
 import com.intellij.openapi.project.Project;
-import tech.lin2j.idea.plugin.action.CommandDialogAction;
+import tech.lin2j.idea.plugin.action.TaskPanelDialogAction;
 import tech.lin2j.idea.plugin.action.HostMoreOpsAction;
 import tech.lin2j.idea.plugin.action.OpenTerminalAction;
 import tech.lin2j.idea.plugin.action.UploadDialogAction;
@@ -54,13 +54,13 @@ public class HostActionPanel extends JPanel {
 
     private void initButtons(int sshId) {
         uploadBtn = new JButton(MessagesBundle.getText("table.action.button.upload"));
-        commandBtn = new JButton(MessagesBundle.getText("table.action.button.command"));
+        commandBtn = new JButton(MessagesBundle.getText("table.action.button.task"));
         terminalBtn = new JButton(MessagesBundle.getText("table.action.button.terminal"));
         moreActionBtn = new JButton(MessagesBundle.getText("table.action.button.more") + " ▼");
 
 
         uploadBtn.addActionListener(new UploadDialogAction(sshId, project));
-        commandBtn.addActionListener(new CommandDialogAction(sshId, project));
+        commandBtn.addActionListener(new TaskPanelDialogAction(sshId, project));
         terminalBtn.addActionListener(new OpenTerminalAction(sshId, project, null));
         moreActionBtn.addActionListener(new HostMoreOpsAction(sshId, project, moreActionBtn));
     }

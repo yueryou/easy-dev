@@ -47,6 +47,7 @@ import java.util.function.Consumer;
 public class CommandPipelinePanel extends JPanel implements ApplicationListener<PipelineRefreshEvent> {
 
     private final Project project;
+    private final Integer sshId;
     private final JPanel root;
 
     /**
@@ -68,7 +69,12 @@ public class CommandPipelinePanel extends JPanel implements ApplicationListener<
     private Runnable onDoubleClickExecute;
 
     public CommandPipelinePanel(Project project) {
+        this(project, null);
+    }
+
+    public CommandPipelinePanel(Project project, Integer sshId) {
         this.project = project;
+        this.sshId = sshId;
         this.notificationService = ApplicationManager.getApplication().getService(PluginNotificationService.class);
         initInput();
         initPipelineList();
@@ -203,6 +209,27 @@ public class CommandPipelinePanel extends JPanel implements ApplicationListener<
     }
 
     /**
+     * 临时替换流水线步骤中的服务器 ID 为 dashboard 传入的 ID
+     * 注意：getPipelineSteps() 每次都会从 PipelineStepWrapper 创建新对象，
+     * 所以必须直接修改 Pipeline.getSteps() 返回的 Wrapper 对象。
+     */
+    private void replaceStepServerIds(Pipeline pipeline) {
+        if (sshId == null || pipeline == null || pipeline.getSteps() == null) {
+            return;
+        }
+        String targetServerId = String.valueOf(sshId);
+        for (io.github.yueryou.easydev.plugin.model.PipelineStepWrapper wrapper : pipeline.getSteps()) {
+            if (wrapper == null) continue;
+            io.github.yueryou.easydev.plugin.model.StepType type = wrapper.getType();
+            if (type == io.github.yueryou.easydev.plugin.model.StepType.UPLOAD) {
+                wrapper.setServerId(targetServerId);
+            } else if (type == io.github.yueryou.easydev.plugin.model.StepType.REMOTE_COMMAND) {
+                wrapper.setRemoteServerId(targetServerId);
+            }
+        }
+    }
+
+    /**
      * 对话框关闭后执行流水线（通过 SwingUtilities.invokeLater 调用）
      */
     private void executePipelineAfterDialogClose(Pipeline pipeline) {
@@ -216,6 +243,9 @@ public class CommandPipelinePanel extends JPanel implements ApplicationListener<
                 MessagesBundle.getText("pipeline.error.no.steps"));
             return;
         }
+
+        // Temporarily replace server IDs with the one from dashboard
+        replaceStepServerIds(pipeline);
 
         Consumer<String> logConsumer = message -> {
             CommandLog commandLog = project.getUserData(CommandLog.COMMAND_LOG_KEY);
@@ -262,6 +292,9 @@ public class CommandPipelinePanel extends JPanel implements ApplicationListener<
                 MessagesBundle.getText("pipeline.error.no.steps"));
             return;
         }
+
+        // Temporarily replace server IDs with the one from dashboard
+        replaceStepServerIds(pipeline);
 
         // 创建日志消费者
         Consumer<String> logConsumer = message -> {
