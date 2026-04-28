@@ -10,12 +10,10 @@ import tech.lin2j.idea.plugin.event.ApplicationContext;
 import tech.lin2j.idea.plugin.uitl.MessagesBundle;
 
 import javax.swing.*;
-import java.awt.*;
 
 public class TaskPanelDialog extends DialogWrapper {
     private final Project project;
     private final int sshId;
-    private final JPanel root = new JPanel(new BorderLayout());
     private final CommandManagePanel commandManagePanel;
     private final CommandPipelinePanel commandPipelinePanel;
     private JBTabbedPane tabs;
@@ -24,21 +22,22 @@ public class TaskPanelDialog extends DialogWrapper {
         super(project);
         this.project = project;
         this.sshId = sshId;
-        // Pass sshId so panels execute on the specified server
         commandManagePanel = new CommandManagePanel(project, sshId);
         commandPipelinePanel = new CommandPipelinePanel(project, sshId);
 
-        // Double-click callback: close dialog
-        commandManagePanel.setOnDoubleClickExecute(() -> {
-            super.doOKAction();
-        });
-        commandPipelinePanel.setOnDoubleClickExecute(() -> {
-            super.doOKAction();
-        });
+        commandManagePanel.setOnDoubleClickExecute(() -> super.doOKAction());
+        commandPipelinePanel.setOnDoubleClickExecute(() -> super.doOKAction());
 
         setTitle(MessagesBundle.getText("dialog.task.title"));
         setSize(500, 0);
         init();
+    }
+
+    @Override
+    protected void doOKAction() {
+        ApplicationContext.getApplicationContext().removeApplicationListener(commandManagePanel);
+        ApplicationContext.getApplicationContext().removeApplicationListener(commandPipelinePanel);
+        super.doOKAction();
     }
 
     @Nullable
@@ -51,7 +50,6 @@ public class TaskPanelDialog extends DialogWrapper {
         tabs.addTab(manageTab, commandManagePanel.createUI());
         tabs.addTab(pipelineTab, commandPipelinePanel.createUI());
 
-        root.add(tabs);
         ApplicationContext.getApplicationContext().addApplicationListener(commandManagePanel);
         ApplicationContext.getApplicationContext().addApplicationListener(commandPipelinePanel);
         return tabs;

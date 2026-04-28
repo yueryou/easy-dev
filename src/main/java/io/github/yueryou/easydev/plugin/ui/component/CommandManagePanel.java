@@ -289,11 +289,13 @@ public class CommandManagePanel extends JPanel implements ApplicationListener<Co
      * Execute command directly on SSH server (SSH mode, no terminal)
      */
     private void executeCommandOnServer(Command command) {
-        if (project == null || command == null) return;
+        if (project == null || command == null || sshId == null) return;
 
         tech.lin2j.idea.plugin.ssh.SshServer server = tech.lin2j.idea.plugin.model.ConfigHelper.getSshServerById(sshId);
         if (server == null) {
-            notificationService.showNotification(project, "Execute command", "Server not found");
+            notificationService.showNotification(project,
+                MessagesBundle.getText("notification.command.execute.title"),
+                MessagesBundle.getText("notification.command.server.not.found"));
             return;
         }
 

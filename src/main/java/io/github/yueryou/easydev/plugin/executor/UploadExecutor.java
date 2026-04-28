@@ -147,79 +147,81 @@ public class UploadExecutor {
                 return StepResult.failure("SSH 连接建立失败");
             }
 
-            boolean createRemoteDir = uploadStep.isCreateRemoteDir();
-            context.getLogConsumer().accept("[Upload] 是否创建远程目录：" + createRemoteDir);
+            try {
+                boolean createRemoteDir = uploadStep.isCreateRemoteDir();
+                context.getLogConsumer().accept("[Upload] 是否创建远程目录：" + createRemoteDir);
 
-            CommandLog commandLog = createCommandLog(context, "[Upload] ");
-            // 如果配置了 exclude 过滤规则，使用 ExtExcludeFilter；否则使用接受所有文件的默认 filter
-            FileFilter fileFilter = profile.getExclude() != null && !profile.getExclude().isEmpty()
-                    ? new ExtExcludeFilter(profile.getExclude(), commandLog)
-                    : (filename) -> true;
+                CommandLog commandLog = createCommandLog(context, "[Upload] ");
+                // 如果配置了 exclude 过滤规则，使用 ExtExcludeFilter；否则使用接受所有文件的默认 filter
+                FileFilter fileFilter = profile.getExclude() != null && !profile.getExclude().isEmpty()
+                        ? new ExtExcludeFilter(profile.getExclude(), commandLog)
+                        : (filename) -> true;
 
-            boolean includeCurrent = profile.getIncludeCurrentDir() != null && profile.getIncludeCurrentDir();
-            boolean allUploaded;
-            // 记录上传完成的远程文件路径，用于后续 SHA256 计算
-            java.util.List<String> uploadedRemotePaths = new java.util.ArrayList<>();
+                boolean includeCurrent = profile.getIncludeCurrentDir() != null && profile.getIncludeCurrentDir();
+                boolean allUploaded;
+                // 记录上传完成的远程文件路径，用于后续 SHA256 计算
+                java.util.List<String> uploadedRemotePaths = new java.util.ArrayList<>();
 
-            if (file.isFile() || (includeCurrent && isDirectory(localFile))) {
-                // 文件或包含当前目录：上传时保留根目录
-                allUploaded = sshService.upload(fileFilter, connection, localFile, remoteDir, commandLog, createRemoteDir);
-                if (allUploaded) {
-                    uploadedRemotePaths.add(computeRemoteFullPath(remoteDir, new File(localFile).getName(), includeCurrent));
-                }
-            } else {
-                // 不包含当前目录：遍历子文件逐个上传
-                context.getLogConsumer().accept("[Upload] 不包含当前目录，遍历子文件上传");
-                allUploaded = true;
-                ExtExcludeFilter extExcludeFilter = new ExtExcludeFilter(profile.getExclude(), commandLog);
-                File dir = new File(localFile);
-                String[] subFiles = dir.list();
-                if (subFiles != null) {
-                    for (String subFile : subFiles) {
-                        String subTargetFile = localFile + "/" + subFile;
-                        if (!extExcludeFilter.accept(subFile)) {
-                            context.getLogConsumer().accept("[Upload] 排除子文件 [" + subTargetFile + "]");
-                            continue;
+                if (file.isFile() || (includeCurrent && isDirectory(localFile))) {
+                    // 文件或包含当前目录：上传时保留根目录
+                    allUploaded = sshService.upload(fileFilter, connection, localFile, remoteDir, commandLog, createRemoteDir);
+                    if (allUploaded) {
+                        uploadedRemotePaths.add(computeRemoteFullPath(remoteDir, new File(localFile).getName(), includeCurrent));
+                    }
+                } else {
+                    // 不包含当前目录：遍历子文件逐个上传
+                    context.getLogConsumer().accept("[Upload] 不包含当前目录，遍历子文件上传");
+                    allUploaded = true;
+                    ExtExcludeFilter extExcludeFilter = new ExtExcludeFilter(profile.getExclude(), commandLog);
+                    File dir = new File(localFile);
+                    String[] subFiles = dir.list();
+                    if (subFiles != null) {
+                        for (String subFile : subFiles) {
+                            String subTargetFile = localFile + "/" + subFile;
+                            if (!extExcludeFilter.accept(subFile)) {
+                                context.getLogConsumer().accept("[Upload] 排除子文件 [" + subTargetFile + "]");
+                                continue;
+                            }
+                            if (!sshService.upload(fileFilter, connection, subTargetFile, remoteDir, commandLog, false)) {
+                                allUploaded = false;
+                                break;
+                            }
+                            uploadedRemotePaths.add(computeRemoteFullPath(remoteDir, subFile, false));
                         }
-                        if (!sshService.upload(fileFilter, connection, subTargetFile, remoteDir, commandLog, false)) {
-                            allUploaded = false;
-                            break;
-                        }
-                        uploadedRemotePaths.add(computeRemoteFullPath(remoteDir, subFile, false));
                     }
                 }
-            }
 
-            // 执行后置命令（同步）
-            boolean postCommandSuccess = true;
-            if (allUploaded && profile.getPostCommandId() != null) {
-                context.getLogConsumer().accept("[Upload] 执行后置命令...");
-                StepResult postCommandResult = executeCommand(profile.getPostCommandId(), profile, server, context);
-                if (!postCommandResult.isSuccess()) {
-                    context.getLogConsumer().accept("[Upload] 后置命令执行失败");
-                    postCommandSuccess = false;
+                // 执行后置命令（同步）
+                boolean postCommandSuccess = true;
+                if (allUploaded && profile.getPostCommandId() != null) {
+                    context.getLogConsumer().accept("[Upload] 执行后置命令...");
+                    StepResult postCommandResult = executeCommand(profile.getPostCommandId(), profile, server, context);
+                    if (!postCommandResult.isSuccess()) {
+                        context.getLogConsumer().accept("[Upload] 后置命令执行失败");
+                        postCommandSuccess = false;
+                    }
                 }
-            }
 
-            // 打印上传完成后的文件路径和 SHA256
-            if (allUploaded) {
-                printRemoteFileChecksums(context, connection, uploadedRemotePaths);
-            }
+                // 打印上传完成后的文件路径和 SHA256
+                if (allUploaded) {
+                    printRemoteFileChecksums(context, connection, uploadedRemotePaths);
+                }
 
-            connection.close();
-
-            if (allUploaded && postCommandSuccess) {
-                context.getLogConsumer().accept("[Upload] 上传成功");
-                StepResult result = StepResult.success("文件上传成功", 0);
-                result.addOutput("uploadedFile", localFile);
-                result.addOutput("remotePath", remoteDir);
-                return result;
-            } else if (!allUploaded) {
-                context.getLogConsumer().accept("[Upload] 上传失败");
-                return StepResult.failure("文件上传失败");
-            } else {
-                context.getLogConsumer().accept("[Upload] 上传成功但后置命令失败");
-                return StepResult.failure("后置命令执行失败");
+                if (allUploaded && postCommandSuccess) {
+                    context.getLogConsumer().accept("[Upload] 上传成功");
+                    StepResult result = StepResult.success("文件上传成功", 0);
+                    result.addOutput("uploadedFile", localFile);
+                    result.addOutput("remotePath", remoteDir);
+                    return result;
+                } else if (!allUploaded) {
+                    context.getLogConsumer().accept("[Upload] 上传失败");
+                    return StepResult.failure("文件上传失败");
+                } else {
+                    context.getLogConsumer().accept("[Upload] 上传成功但后置命令失败");
+                    return StepResult.failure("后置命令执行失败");
+                }
+            } finally {
+                connection.close();
             }
 
         } catch (Exception e) {
@@ -290,10 +292,14 @@ public class UploadExecutor {
         if (isDirUpload) {
             return remoteDir;
         }
-        if (remoteDir.endsWith("/") || remoteDir.endsWith("\\")) {
-            return remoteDir + fileName;
-        }
-        return remoteDir + "/" + fileName;
+        return remoteDir.endsWith("/") ? remoteDir + fileName : remoteDir + "/" + fileName;
+    }
+
+    /**
+     * Shell 参数转义，防止命令注入
+     */
+    private static String escapeShellArg(String arg) {
+        return "'" + arg.replace("'", "'\\''") + "'";
     }
 
     /**
@@ -303,8 +309,9 @@ public class UploadExecutor {
                                                    java.util.List<String> remotePaths) {
         for (String remotePath : remotePaths) {
             try {
+                String safePath = escapeShellArg(remotePath);
                 tech.lin2j.idea.plugin.ssh.SshStatus status = connection.execute(
-                    "sha256sum " + remotePath + " | awk '{print $1}' && stat -c '%y' " + remotePath + " | sed 's/\\.[0-9]*//'");
+                    "sha256sum " + safePath + " | awk '{print $1}' && stat -c '%y' " + safePath + " | sed 's/\\.[0-9]*//'");
                 if (status.isSuccess()) {
                     String[] lines = status.getMessage().trim().split("\n");
                     if (lines.length >= 2) {

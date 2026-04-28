@@ -21,6 +21,8 @@ import io.github.yueryou.easydev.plugin.log.UnifiedLogger;
 import io.github.yueryou.easydev.plugin.model.Pipeline;
 import io.github.yueryou.easydev.plugin.model.PipelineConfigPersistence;
 import io.github.yueryou.easydev.plugin.model.PipelineResult;
+import io.github.yueryou.easydev.plugin.model.PipelineStepWrapper;
+import io.github.yueryou.easydev.plugin.model.StepType;
 import io.github.yueryou.easydev.plugin.ui.dialog.PipelineEditDialog;
 import io.github.yueryou.easydev.plugin.ui.render.PipelineListCellRenderer;
 import org.jetbrains.annotations.NotNull;
@@ -39,6 +41,7 @@ import java.awt.event.MouseEvent;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Consumer;
 
 /**
@@ -210,21 +213,41 @@ public class CommandPipelinePanel extends JPanel implements ApplicationListener<
 
     /**
      * 临时替换流水线步骤中的服务器 ID 为 dashboard 传入的 ID
+     * 返回原始 serverId 映射，用于执行完成后恢复。
      * 注意：getPipelineSteps() 每次都会从 PipelineStepWrapper 创建新对象，
      * 所以必须直接修改 Pipeline.getSteps() 返回的 Wrapper 对象。
      */
-    private void replaceStepServerIds(Pipeline pipeline) {
+    private Map<PipelineStepWrapper, String> replaceStepServerIds(Pipeline pipeline) {
+        Map<PipelineStepWrapper, String> originals = new java.util.HashMap<>();
         if (sshId == null || pipeline == null || pipeline.getSteps() == null) {
-            return;
+            return originals;
         }
         String targetServerId = String.valueOf(sshId);
-        for (io.github.yueryou.easydev.plugin.model.PipelineStepWrapper wrapper : pipeline.getSteps()) {
+        for (PipelineStepWrapper wrapper : pipeline.getSteps()) {
             if (wrapper == null) continue;
-            io.github.yueryou.easydev.plugin.model.StepType type = wrapper.getType();
-            if (type == io.github.yueryou.easydev.plugin.model.StepType.UPLOAD) {
+            StepType type = wrapper.getType();
+            if (type == StepType.UPLOAD) {
+                originals.put(wrapper, wrapper.getServerId());
                 wrapper.setServerId(targetServerId);
-            } else if (type == io.github.yueryou.easydev.plugin.model.StepType.REMOTE_COMMAND) {
+            } else if (type == StepType.REMOTE_COMMAND) {
+                originals.put(wrapper, wrapper.getRemoteServerId());
                 wrapper.setRemoteServerId(targetServerId);
+            }
+        }
+        return originals;
+    }
+
+    /**
+     * 恢复流水线步骤中的原始服务器 ID
+     */
+    private void restoreStepServerIds(Map<PipelineStepWrapper, String> originals) {
+        for (Map.Entry<PipelineStepWrapper, String> entry : originals.entrySet()) {
+            PipelineStepWrapper wrapper = entry.getKey();
+            StepType type = wrapper.getType();
+            if (type == StepType.UPLOAD) {
+                wrapper.setServerId(entry.getValue());
+            } else if (type == StepType.REMOTE_COMMAND) {
+                wrapper.setRemoteServerId(entry.getValue());
             }
         }
     }
@@ -244,8 +267,8 @@ public class CommandPipelinePanel extends JPanel implements ApplicationListener<
             return;
         }
 
-        // Temporarily replace server IDs with the one from dashboard
-        replaceStepServerIds(pipeline);
+        // Save originals and replace server IDs before execution
+        Map<PipelineStepWrapper, String> originals = replaceStepServerIds(pipeline);
 
         Consumer<String> logConsumer = message -> {
             CommandLog commandLog = project.getUserData(CommandLog.COMMAND_LOG_KEY);
@@ -270,11 +293,11 @@ public class CommandPipelinePanel extends JPanel implements ApplicationListener<
                         if (commandLog != null && commandLog.getConsole() != null) {
                             commandLog.getConsole().clear();
                         }
-                        executePipelineAsync(pipeline, 0, logConsumer);
+                        executePipelineAsync(pipeline, 0, logConsumer, originals);
                     }
                 });
             } else {
-                executePipelineAsync(pipeline, 0, logConsumer);
+                executePipelineAsync(pipeline, 0, logConsumer, originals);
             }
         });
     }
@@ -292,9 +315,6 @@ public class CommandPipelinePanel extends JPanel implements ApplicationListener<
                 MessagesBundle.getText("pipeline.error.no.steps"));
             return;
         }
-
-        // Temporarily replace server IDs with the one from dashboard
-        replaceStepServerIds(pipeline);
 
         // 创建日志消费者
         Consumer<String> logConsumer = message -> {
@@ -325,26 +345,34 @@ public class CommandPipelinePanel extends JPanel implements ApplicationListener<
                         if (commandLog != null && commandLog.getConsole() != null) {
                             commandLog.getConsole().clear();
                         }
-                        // 开始执行流水线
-                        executePipelineAsync(pipeline, startIndex, logConsumer);
+                        // 开始执行流水线（无 serverId 覆盖，不需要恢复）
+                        executePipelineAsync(pipeline, startIndex, logConsumer, null);
                     }
                 });
             } else {
                 // 工具窗口不存在，直接执行
-                executePipelineAsync(pipeline, startIndex, logConsumer);
+                executePipelineAsync(pipeline, startIndex, logConsumer, null);
             }
         });
     }
 
     /**
      * 异步执行流水线
+     *
+     * @param originals 原始 serverId 映射，执行完成后恢复（非空时表示 Task 模式）
      */
-    private void executePipelineAsync(Pipeline pipeline, int startIndex, Consumer<String> logConsumer) {
+    private void executePipelineAsync(Pipeline pipeline, int startIndex, Consumer<String> logConsumer,
+                                       Map<PipelineStepWrapper, String> originals) {
         ProgressManager.getInstance().run(new Task.Backgroundable(project, MessagesBundle.getText("pipeline.running") + pipeline.getName()) {
             @Override
             public void run(@NotNull ProgressIndicator indicator) {
                 try {
                     PipelineResult result = PipelineExecutor.executeFromStep(pipeline, null, project, logConsumer, startIndex);
+
+                    // 执行完成后恢复原始 serverId
+                    if (originals != null && !originals.isEmpty()) {
+                        restoreStepServerIds(originals);
+                    }
 
                     String time = LocalDateTime.now().format(DateTimeFormatter.ofPattern("HH:mm:ss"));
                     logConsumer.accept("\n========== 流水线完成 " + time + " ==========");
