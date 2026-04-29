@@ -166,7 +166,7 @@ public class UploadExecutor {
                     // 文件或包含当前目录：上传时保留根目录
                     allUploaded = sshService.upload(fileFilter, connection, localFile, remoteDir, commandLog, createRemoteDir);
                     if (allUploaded) {
-                        uploadedRemotePaths.add(computeRemoteFullPath(remoteDir, new File(localFile).getName(), includeCurrent));
+                        uploadedRemotePaths.add(computeRemoteFullPath(remoteDir, new File(localFile).getName(), includeCurrent && isDirectory(localFile)));
                     }
                 } else {
                     // 不包含当前目录：遍历子文件逐个上传
@@ -191,6 +191,11 @@ public class UploadExecutor {
                     }
                 }
 
+                // 打印上传完成后的文件路径和 SHA256
+                if (allUploaded) {
+                    printRemoteFileChecksums(context, connection, uploadedRemotePaths);
+                }
+
                 // 执行后置命令（同步）
                 boolean postCommandSuccess = true;
                 if (allUploaded && profile.getPostCommandId() != null) {
@@ -200,11 +205,6 @@ public class UploadExecutor {
                         context.getLogConsumer().accept("[Upload] 后置命令执行失败");
                         postCommandSuccess = false;
                     }
-                }
-
-                // 打印上传完成后的文件路径和 SHA256
-                if (allUploaded) {
-                    printRemoteFileChecksums(context, connection, uploadedRemotePaths);
                 }
 
                 if (allUploaded && postCommandSuccess) {
