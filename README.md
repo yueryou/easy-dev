@@ -3,10 +3,12 @@
 <p align="center">Convenient Intellij Platform Plugin for Deploying and Upgrading Services during Development</p>
 
 <div align="center">
-    <a href="https://plugins.jetbrains.com/plugin/31033-easy-dev"><img src="https://badge.fury.io/gh/yueryou%2Feasy-dev.svg"></a>
+    <a href="https://plugins.jetbrains.com/plugin/31033-easy-dev"><img src="https://img.shields.io/jetbrains/plugin/v/31033-easy-dev
+"></a>
     <a href="#"><img src = "https://img.shields.io/github/license/yueryou/easy-dev" ></a>
     <a href=""><img src="https://img.shields.io/badge/author-yueryou-brightgreen"></a>
     <a href="#"><img src="https://img.shields.io/badge/idea-223.8836%2B-yellow"></a>
+    <a href="#"><img src="https://img.shields.io/github/v/tag/yueryou/easy-dev"></a>
 </div>
 
 
