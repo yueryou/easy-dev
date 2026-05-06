@@ -81,6 +81,8 @@
         <li>FixBug import/export features bug</li>
         <li>
 Refactoring optimization: Achieved complete decoupling of the Server, Shortcuts, and Upload Configuration modules, ensuring they are independent and free of dependencies.</li>
+        <li>Supports running pipelines on designated hosts.</li>
+        <li>Conducting code reviews and fixing vulnerabilities.</li>
     </ul>
     <h2>release 1.6.0</h2>
     <ul>
